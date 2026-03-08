@@ -24,7 +24,7 @@ local Config = {
     MainColor      = Color3.fromRGB(19, 19, 31),
     SecondaryColor = Color3.fromRGB(26, 26, 42),
     AccentColor    = Color3.fromRGB(124, 58, 237),
-    AccentColor2   = Color3.fromRGB(168, 85, 247),
+    AccentColor2   = Color3.fromRGB(196, 169, 247),  -- purple lerped 65% toward white
     TextColor      = Color3.fromRGB(228, 228, 231),
     SubTextColor   = Color3.fromRGB(120, 120, 150),
     BorderColor    = Color3.fromRGB(40, 40, 60),
@@ -61,15 +61,15 @@ function MinimalUI:SetTheme(color)
     local isLight = lum > 0.55
 
     if isLight then
-        -- Light colour → AccentColor2 is darker shade of the same hue
-        local s2 = math.min(1, s * 1.2 + 0.1)
-        local v2 = math.max(0, v * 0.55)
+        -- Light colour → AccentColor2 is a darker shade of the same hue
+        local s2 = math.min(1, s * 1.3 + 0.15)
+        local v2 = math.max(0, v * 0.45)
         Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
     else
-        -- Dark colour → AccentColor2 is lighter/desaturated (blends toward white)
-        local s2 = math.max(0, s * 0.45)
-        local v2 = math.min(1, v * 0.75 + 0.30)
-        Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
+        -- Dark/saturated → AccentColor2 = lerp accent toward WHITE by 65%
+        -- black → light grey,  blue → white-blue,  red → white-red
+        local blend = 0.65
+        Config.AccentColor2 = Config.AccentColor:Lerp(Color3.new(1,1,1), blend)
     end
 
     -- Text colour on gradient backgrounds: dark text for light accents, white for dark
@@ -145,36 +145,31 @@ function MinimalUI:SetTheme(color)
 
     -- (btn-text updates are handled in the main themedElements loop above)
 
-    -- Update title gradient with smooth tween over 0.4s
+    -- Update title gradient smoothly: accent → accent2(≈white-blend) → white → accent2 → accent
     if titleGradRef and titleGradRef.Parent then
         task.spawn(function()
-            local oldSeq = titleGradRef.Color
-            local oldA = oldSeq.Keypoints[1].Value
-            local oldB = oldSeq.Keypoints[#oldSeq.Keypoints].Value
+            local oldKP = titleGradRef.Color.Keypoints
+            local oldC1  = oldKP[1].Value
+            local oldC2  = oldKP[2].Value
+            local oldMid = oldKP[3].Value
+            -- Target keypoints
+            local newC1  = Config.AccentColor
+            local newC2  = Config.AccentColor2  -- ≈white for dark, ≈darker for light
+            local newMid = isLight and Config.AccentColor2 or Color3.new(1,1,1)
             local steps = 12
             for i = 1, steps do
                 local t = i / steps
-                local c1 = oldA:Lerp(isLight and Config.AccentColor2 or Config.AccentColor, t)
-                local c2 = oldB:Lerp(isLight and Config.AccentColor or Config.AccentColor, t)
-                local cMid = Color3.new(1,1,1):Lerp(
-                    isLight and Config.AccentColor or Color3.new(1,1,1), t)
+                local c1  = oldC1:Lerp(newC1,  t)
+                local c2  = oldC2:Lerp(newC2,  t)
+                local mid = oldMid:Lerp(newMid, t)
                 if titleGradRef and titleGradRef.Parent then
-                    if isLight then
-                        titleGradRef.Color = ColorSequence.new({
-                            ColorSequenceKeypoint.new(0,    c1),
-                            ColorSequenceKeypoint.new(0.35, c2),
-                            ColorSequenceKeypoint.new(0.65, c1),
-                            ColorSequenceKeypoint.new(1,    c2),
-                        })
-                    else
-                        titleGradRef.Color = ColorSequence.new({
-                            ColorSequenceKeypoint.new(0,    c1),
-                            ColorSequenceKeypoint.new(0.35, oldA:Lerp(Config.AccentColor2, t)),
-                            ColorSequenceKeypoint.new(0.5,  cMid),
-                            ColorSequenceKeypoint.new(0.65, oldA:Lerp(Config.AccentColor2, t)),
-                            ColorSequenceKeypoint.new(1,    c1),
-                        })
-                    end
+                    titleGradRef.Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0,    c1),
+                        ColorSequenceKeypoint.new(0.35, c2),
+                        ColorSequenceKeypoint.new(0.5,  mid),
+                        ColorSequenceKeypoint.new(0.65, c2),
+                        ColorSequenceKeypoint.new(1,    c1),
+                    })
                 end
                 task.wait(0.4 / steps)
             end
@@ -338,14 +333,15 @@ function MinimalUI:CreateWindow(title)
     })
     local titleGrad = create("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   Config.AccentColor),
+            ColorSequenceKeypoint.new(0,    Config.AccentColor),
             ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
-            ColorSequenceKeypoint.new(0.5, Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(0.5,  Color3.new(1,1,1)),
             ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
-            ColorSequenceKeypoint.new(1,   Config.AccentColor),
+            ColorSequenceKeypoint.new(1,    Config.AccentColor),
         }),
         Parent = TitleLabel
     })
+    -- AccentColor2 is already ~white for dark colours, so the gradient is: accent→light→white→light→accent
     titleGradRef = titleGrad
     task.spawn(function()
         while TitleLabel.Parent do
