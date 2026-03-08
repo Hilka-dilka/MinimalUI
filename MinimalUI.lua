@@ -54,10 +54,11 @@ end
 function MinimalUI:SetTheme(color)
     Config.AccentColor = color
     local h, s, v = color:ToHSV()
-    -- AccentColor2: тот же оттенок, чуть светлее и чуть менее насыщен
-    -- НЕ меняем hue — чтобы зелёный оставался зелёным, белый белым
-    local v2 = math.min(1, v + 0.18)
-    local s2 = math.max(0, s - 0.12)
+    -- AccentColor2: тот же оттенок H, намного менее насыщен (→ белый),
+    -- чуть ярче. Так зелёный даёт бело-зелёный, красный — бело-красный,
+    -- белый — белый, НЕТ примеси фиолетового.
+    local s2 = math.max(0, s * 0.45)          -- намного менее насыщен
+    local v2 = math.min(1, v * 0.75 + 0.30)   -- ярче
     Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
 
     local newSeq = ColorSequence.new({
@@ -78,10 +79,17 @@ function MinimalUI:SetTheme(color)
             g.Color = newSeq
         end
     end
-    -- Restore tab gradient enabled state (only active tab should show gradient)
+    -- Update tab text colors: active = white, inactive = SubTextColor
+    -- and keep gradient enabled only for the active tab
     for _, tg in pairs(tabGradients) do
-        if tg.grad and tg.grad.Parent then
-            -- Keep Enabled state as-is (set by selectTab/first tab init)
+        if tg.grad and tg.btn and tg.btn.Parent then
+            if tg.grad.Enabled then
+                -- это активная вкладка — текст белый
+                tg.btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            else
+                -- неактивная — серый
+                tg.btn.TextColor3 = Config.SubTextColor
+            end
         end
     end
     -- Update title gradient (accent → accent2 → white → accent2 → accent)
@@ -404,6 +412,8 @@ function MinimalUI:CreateWindow(title)
         })
         table.insert(tabGradients, {grad = tabGrad, btn = TabBtn})
         registerGradient(tabGrad)
+        -- Регистрируем кнопку вкладки — при SetTheme цвет фона обновится
+        registerThemed("accent", TabBtn, "BackgroundColor3")
 
         -- Wrapper Frame: обычный Frame, поддерживает Position tween для анимации вкладок
         local Wrapper = create("Frame", {
@@ -436,16 +446,16 @@ function MinimalUI:CreateWindow(title)
 
             -- Деактивируем все кнопки вкладок (скрываем градиент, серый текст)
             for _, t in pairs(Window.Tabs) do
-                tween(t.Btn, {BackgroundTransparency = 1})
-                t.Btn.TextColor3 = Config.SubTextColor
+                t.Btn.BackgroundTransparency = 1
+                t.Btn.TextColor3 = Config.SubTextColor  -- серый для неактивных
                 -- Скрываем градиент на неактивных вкладках
                 for _, tg in pairs(tabGradients) do
                     if tg.btn == t.Btn then tg.grad.Enabled = false end
                 end
             end
-            -- Активируем выбранную: показываем градиент, белый текст
-            tween(TabBtn, {BackgroundTransparency = 0})
-            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            -- Активируем выбранную: показываем градиент, БЕЛЫЙ текст
+            TabBtn.BackgroundTransparency = 0
+            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  -- белый у активной
             tabGrad.Enabled = true
 
             -- Скрываем старую вкладку (только Position + TextTransparency — NO BackgroundTransparency на ScrollingFrame/Frame)
@@ -504,8 +514,8 @@ function MinimalUI:CreateWindow(title)
         TabBtn.MouseButton1Click:Connect(selectTab)
         if #Window.Tabs == 0 then
             Wrapper.Visible = true
-            tween(TabBtn, {BackgroundTransparency = 0})
-            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TabBtn.BackgroundTransparency = 0
+            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  -- белый у первой
             tabGrad.Enabled = true -- показываем градиент у первой вкладки
             currentTab = Tab
         end
@@ -717,12 +727,12 @@ function MinimalUI:CreateWindow(title)
                     BackgroundColor3 = Config.AccentColor, Parent = Track
                 })
                 corner(Fill, UDim.new(1, 0))
-                create("UIGradient", {
+                registerGradient(create("UIGradient", {
                     Color = ColorSequence.new({
                         ColorSequenceKeypoint.new(0, Config.AccentColor),
                         ColorSequenceKeypoint.new(1, Config.AccentColor2),
                     }), Parent = Fill
-                })
+                }))
                 registerThemed("accent", Fill, "BackgroundColor3")
 
                 local Knob = create("Frame", {
@@ -847,12 +857,12 @@ function MinimalUI:CreateWindow(title)
                     TextSize = 13, Font = Config.SubFont, Parent = F
                 })
                 corner(B, UDim.new(0, 7))
-                create("UIGradient", {
+                registerGradient(create("UIGradient", {
                     Color = ColorSequence.new({
                         ColorSequenceKeypoint.new(0, Config.AccentColor),
                         ColorSequenceKeypoint.new(1, Config.AccentColor2),
                     }), Rotation = 135, Parent = B
-                })
+                }))
                 registerThemed("accent", B, "BackgroundColor3")
 
                 B.MouseButton1Click:Connect(function()
