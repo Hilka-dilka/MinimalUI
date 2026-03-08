@@ -86,8 +86,16 @@ function MinimalUI:SetTheme(color)
     -- Update flat-color elements
     for _, e in pairs(themedElements) do
         if e.obj and e.obj.Parent then
+            local targetColor
+            if e.role == "accent2" then
+                targetColor = Config.AccentColor2
+            elseif e.role == "btn-text" then
+                targetColor = onAccentText  -- white on dark, dark on light
+            else
+                targetColor = Config.AccentColor
+            end
             TweenService:Create(e.obj, TweenInfo.new(0.4), {
-                [e.prop] = (e.role == "accent2") and Config.AccentColor2 or Config.AccentColor
+                [e.prop] = targetColor
             }):Play()
         end
     end
@@ -135,14 +143,7 @@ function MinimalUI:SetTheme(color)
         end
     end
 
-    -- Update button text colours with smooth tween
-    for _, e in pairs(themedElements) do
-        if e.role == "btn-text" and e.obj and e.obj.Parent then
-            TweenService:Create(e.obj, TweenInfo.new(0.4), {
-                TextColor3 = onAccentText
-            }):Play()
-        end
-    end
+    -- (btn-text updates are handled in the main themedElements loop above)
 
     -- Update title gradient with smooth tween over 0.4s
     if titleGradRef and titleGradRef.Parent then
@@ -922,36 +923,55 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- ════════ BUTTON (gradient) ════════
+            -- ════════ BUTTON (gradient bg + separate text label) ════════
             function Section:CreateButton(text, callback)
                 callback = callback or function() end
                 local F = create("Frame", {
                     Size = UDim2.new(1, 0, 0, 34),
                     BackgroundTransparency = 1, Parent = SFrame
                 })
-                local B = create("TextButton", {
+                -- BG Frame carries the gradient — UIGradient does NOT affect TextLabel children
+                local BG = create("Frame", {
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundColor3 = Config.AccentColor,
-                    Text = text, TextColor3 = Config.OnAccentText,
-                    TextSize = 13, Font = Config.SubFont, Parent = F
+                    Parent = F
                 })
-                corner(B, UDim.new(0, 7))
-                registerGradient(create("UIGradient", {
+                corner(BG, UDim.new(0, 7))
+                local btnGrad = create("UIGradient", {
                     Color = ColorSequence.new({
                         ColorSequenceKeypoint.new(0, Config.AccentColor),
                         ColorSequenceKeypoint.new(1, Config.AccentColor2),
-                    }), Rotation = 135, Parent = B
-                }))
-                registerThemed("accent", B, "BackgroundColor3")
-                registerThemed("btn-text", B, "TextColor3")
+                    }), Rotation = 135, Parent = BG
+                })
+                registerGradient(btnGrad)
+                registerThemed("accent", BG, "BackgroundColor3")
+
+                -- Separate TextLabel so UIGradient on BG never touches text color
+                local BtnLbl = create("TextLabel", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = text,
+                    TextColor3 = Config.OnAccentText,
+                    TextSize = 13, Font = Config.SubFont,
+                    ZIndex = 2, Parent = BG
+                })
+                registerThemed("btn-text", BtnLbl, "TextColor3")
+
+                -- Invisible button over everything to capture clicks
+                local B = create("TextButton", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    ZIndex = 3, Parent = BG
+                })
 
                 B.MouseButton1Click:Connect(function()
-                    -- flash: briefly lighten, then restore
+                    -- Flash: lighten briefly then restore gradient
                     local h2,s2,v2 = Config.AccentColor:ToHSV()
                     local flashCol = Color3.fromHSV(h2, math.max(0, s2*0.5), math.min(1, v2*1.3))
-                    tween(B, {BackgroundColor3 = flashCol}, 0.1)
+                    tween(BG, {BackgroundColor3 = flashCol}, 0.1)
                     task.wait(0.1)
-                    tween(B, {BackgroundColor3 = Config.AccentColor}, 0.2)
+                    tween(BG, {BackgroundColor3 = Config.AccentColor}, 0.2)
                     callback()
                 end)
             end
