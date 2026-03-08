@@ -35,9 +35,14 @@ local Config = {
 
 -- Список всех окрашенных элементов для динамической смены темы
 local themedElements = {}
+local themedGradients = {} -- UIGradient objects that need ColorSequence updates
+local titleGradRef    = nil  -- reference to title UIGradient
 
 local function registerThemed(role, obj, prop)
     table.insert(themedElements, {role=role, obj=obj, prop=prop})
+end
+local function registerGradient(g)
+    table.insert(themedGradients, g)
 end
 
 -- ═══════════════════════════════════════
@@ -46,13 +51,37 @@ end
 function MinimalUI:SetTheme(color)
     Config.AccentColor = color
     local h, s, v = color:ToHSV()
-    Config.AccentColor2 = Color3.fromHSV(h, s * 0.75, math.min(1, v * 1.2))
+    -- Compute accent2: shift hue +15deg, slightly lighter
+    local h2 = (h + 15/360) % 1
+    Config.AccentColor2 = Color3.fromHSV(h2, math.max(0, s - 0.1), math.min(1, v + 0.15))
+
+    local newSeq = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Config.AccentColor),
+        ColorSequenceKeypoint.new(1, Config.AccentColor2),
+    })
+    -- Update flat-color elements
     for _, e in pairs(themedElements) do
         if e.obj and e.obj.Parent then
             TweenService:Create(e.obj, TweenInfo.new(0.4), {
                 [e.prop] = (e.role == "accent2") and Config.AccentColor2 or Config.AccentColor
             }):Play()
         end
+    end
+    -- Update UIGradient objects
+    for _, g in pairs(themedGradients) do
+        if g and g.Parent then
+            g.Color = newSeq
+        end
+    end
+    -- Update title gradient (accent → white → accent2)
+    if titleGradRef and titleGradRef.Parent then
+        titleGradRef.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,   Config.AccentColor),
+            ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
+            ColorSequenceKeypoint.new(0.5, Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
+            ColorSequenceKeypoint.new(1,   Config.AccentColor),
+        })
     end
 end
 
@@ -99,7 +128,7 @@ local function makeGradient(parent, rotation)
         Rotation = rotation or 135,
         Parent = parent
     })
-    registerThemed("gradient_c1", g, "Color") -- handled specially
+    registerGradient(g)
     return g
 end
 
@@ -212,13 +241,15 @@ function MinimalUI:CreateWindow(title)
     })
     local titleGrad = create("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   Config.TextColor),
-            ColorSequenceKeypoint.new(0.4, Config.AccentColor),
-            ColorSequenceKeypoint.new(0.6, Config.AccentColor2),
-            ColorSequenceKeypoint.new(1,   Config.TextColor),
+            ColorSequenceKeypoint.new(0,   Config.AccentColor),
+            ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
+            ColorSequenceKeypoint.new(0.5, Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
+            ColorSequenceKeypoint.new(1,   Config.AccentColor),
         }),
         Parent = TitleLabel
     })
+    titleGradRef = titleGrad
     task.spawn(function()
         while TitleLabel.Parent do
             TweenService:Create(titleGrad, TweenInfo.new(
@@ -353,13 +384,13 @@ function MinimalUI:CreateWindow(title)
         registerThemed("accent", TabBtn, "BackgroundColor3")
 
         -- Gradient for active tab background
-        create("UIGradient", {
+        registerGradient(create("UIGradient", {
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Config.AccentColor),
                 ColorSequenceKeypoint.new(1, Config.AccentColor2),
             }),
             Rotation = 135, Parent = TabBtn
-        })
+        }))
 
         -- Wrapper Frame: обычный Frame, поддерживает Position tween для анимации вкладок
         local Wrapper = create("Frame", {
@@ -493,12 +524,12 @@ function MinimalUI:CreateWindow(title)
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = SFrame
             })
-            create("UIGradient", {
+            registerGradient(create("UIGradient", {
                 Color = ColorSequence.new({
                     ColorSequenceKeypoint.new(0, Config.AccentColor),
                     ColorSequenceKeypoint.new(1, Config.AccentColor2),
                 }), Parent = STitleLbl
-            })
+            }))
             registerThemed("accent", STitleLbl, "TextColor3")
             create("Frame", {
                 Size = UDim2.new(1, 0, 0, 1),
