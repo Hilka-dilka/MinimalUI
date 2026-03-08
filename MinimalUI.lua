@@ -345,19 +345,29 @@ function MinimalUI:CreateWindow(title)
             Size = UDim2.new(1, 0, 0, 32),
             BackgroundColor3 = Config.AccentColor,
             BackgroundTransparency = 1,
-            Text = name, TextColor3 = Config.SubTextColor,
+            Text = name,
+            TextColor3 = Config.SubTextColor,
             TextSize = 13, Font = Config.SubFont, Parent = TabBar
         })
         corner(TabBtn, UDim.new(0, 7))
         registerThemed("accent", TabBtn, "BackgroundColor3")
 
-        -- Gradient for active tab
-        local tabGrad = create("UIGradient", {
+        -- Gradient for active tab background
+        create("UIGradient", {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,   Config.AccentColor),
-                ColorSequenceKeypoint.new(1,   Config.AccentColor2),
+                ColorSequenceKeypoint.new(0, Config.AccentColor),
+                ColorSequenceKeypoint.new(1, Config.AccentColor2),
             }),
             Rotation = 135, Parent = TabBtn
+        })
+
+        -- Wrapper Frame supports GroupTransparency (unlike ScrollingFrame)
+        local Wrapper = create("Frame", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            ClipsDescendants = false,
+            Visible = false,
+            Parent = ContentBox
         })
 
         local Content = create("ScrollingFrame", {
@@ -365,10 +375,10 @@ function MinimalUI:CreateWindow(title)
             BackgroundTransparency = 1,
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Config.AccentColor,
-            BorderSizePixel = 0, Visible = false,
-            CanvasSize = UDim2.new(0,0,0,0),
+            BorderSizePixel = 0,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            Parent = ContentBox
+            Parent = Wrapper
         })
         registerThemed("accent", Content, "ScrollBarImageColor3")
         create("UIListLayout", {
@@ -379,43 +389,60 @@ function MinimalUI:CreateWindow(title)
         local function selectTab()
             if tabSwitching or currentTab == Tab then return end
             tabSwitching = true
+
+            -- Деактивируем все кнопки вкладок: прозрачный фон, серый текст
             for _, t in pairs(Window.Tabs) do
                 tween(t.Btn, {BackgroundTransparency = 1})
-                tween(t.Btn, {TextColor3 = Config.SubTextColor})
+                t.Btn.TextColor3 = Config.SubTextColor
             end
+            -- Активируем выбранную: градиентный фон, белый текст
             tween(TabBtn, {BackgroundTransparency = 0})
-            TabBtn.TextColor3 = Color3.new(1,1,1)
+            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-            if currentTab and currentTab.Content.Visible then
-                local old = currentTab.Content
-                tween(old, {Position = UDim2.new(0,0,0,-8)}, 0.15)
-                local fo = Instance.new("NumberValue"); fo.Value = 0
-                fo.Changed:Connect(function(v) old.GroupTransparency = v end)
-                TweenService:Create(fo, TweenInfo.new(0.15), {Value=1}):Play()
+            -- Fade out старой вкладки через Wrapper (GroupTransparency работает на Frame)
+            if currentTab and currentTab.Wrapper.Visible then
+                local oldW = currentTab.Wrapper
+                local fo = Instance.new("NumberValue")
+                fo.Value = 0
+                fo.Changed:Connect(function(val)
+                    oldW.GroupTransparency = val
+                    oldW.Position = UDim2.new(0, 0, 0, -math.floor(val * 8))
+                end)
+                TweenService:Create(fo, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Value = 1}):Play()
                 task.wait(0.15)
-                old.Visible = false; old.GroupTransparency = 0
-                old.Position = UDim2.new(0,0,0,0); fo:Destroy()
+                oldW.Visible = false
+                oldW.GroupTransparency = 0
+                oldW.Position = UDim2.new(0, 0, 0, 0)
+                fo:Destroy()
             end
 
-            Content.Position = UDim2.new(0,0,0,10)
-            Content.GroupTransparency = 1; Content.Visible = true
-            tween(Content, {Position = UDim2.new(0,0,0,0)}, 0.3)
-            local fi = Instance.new("NumberValue"); fi.Value = 1
-            fi.Changed:Connect(function(v) Content.GroupTransparency = v end)
-            TweenService:Create(fi, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Value=0}):Play()
-            task.wait(0.3); fi:Destroy()
-            currentTab = Tab; tabSwitching = false
+            -- Fade in новой вкладки
+            Wrapper.GroupTransparency = 1
+            Wrapper.Position = UDim2.new(0, 0, 0, 10)
+            Wrapper.Visible = true
+            local fi = Instance.new("NumberValue")
+            fi.Value = 1
+            fi.Changed:Connect(function(val)
+                Wrapper.GroupTransparency = val
+                Wrapper.Position = UDim2.new(0, 0, 0, math.floor((1 - val) * 10))
+            end)
+            TweenService:Create(fi, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Value = 0}):Play()
+            task.wait(0.3)
+            fi:Destroy()
+
+            currentTab = Tab
+            tabSwitching = false
         end
 
         TabBtn.MouseButton1Click:Connect(selectTab)
         if #Window.Tabs == 0 then
-            Content.Visible = true
+            Wrapper.Visible = true
             tween(TabBtn, {BackgroundTransparency = 0})
-            TabBtn.TextColor3 = Color3.new(1,1,1)
+            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             currentTab = Tab
         end
 
-        Tab.Btn = TabBtn; Tab.Content = Content
+        Tab.Btn = TabBtn; Tab.Content = Content; Tab.Wrapper = Wrapper
 
         -- ════════ SECTION ════════
         function Tab:CreateSection(sectionName)
