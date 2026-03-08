@@ -24,7 +24,7 @@ local Config = {
     MainColor      = Color3.fromRGB(19, 19, 31),
     SecondaryColor = Color3.fromRGB(26, 26, 42),
     AccentColor    = Color3.fromRGB(124, 58, 237),
-    AccentColor2   = Color3.fromRGB(196, 169, 247),  -- purple lerped 65% toward white
+    AccentColor2   = Color3.fromRGB(255, 255, 255),  -- ВСЕГДА белый для тёмных цветов (градиент = цвет → белый)
     TextColor      = Color3.fromRGB(228, 228, 231),
     SubTextColor   = Color3.fromRGB(120, 120, 150),
     BorderColor    = Color3.fromRGB(40, 40, 60),
@@ -61,15 +61,14 @@ function MinimalUI:SetTheme(color)
     local isLight = lum > 0.55
 
     if isLight then
-        -- Light colour → AccentColor2 is a darker shade of the same hue
-        local s2 = math.min(1, s * 1.3 + 0.15)
-        local v2 = math.max(0, v * 0.45)
+        -- Light colour → AccentColor2 is a DARKER shade (so gradient stays visible)
+        local s2 = math.min(1, s * 1.4 + 0.1)
+        local v2 = math.max(0, v * 0.4)
         Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
     else
-        -- Dark/saturated → AccentColor2 = lerp accent toward WHITE by 65%
-        -- black → light grey,  blue → white-blue,  red → white-red
-        local blend = 0.65
-        Config.AccentColor2 = Config.AccentColor:Lerp(Color3.new(1,1,1), blend)
+        -- ВСЕГДА: AccentColor2 = БЕЛЫЙ. Градиент = выбранный цвет → белый.
+        -- Чёрный → чёрно-белый. Синий → сине-белый. Красный → красно-белый.
+        Config.AccentColor2 = Color3.new(1, 1, 1)
     end
 
     -- Text colour on gradient backgrounds: dark text for light accents, white for dark
@@ -154,8 +153,8 @@ function MinimalUI:SetTheme(color)
             local oldMid = oldKP[3].Value
             -- Target keypoints
             local newC1  = Config.AccentColor
-            local newC2  = Config.AccentColor2  -- ≈white for dark, ≈darker for light
-            local newMid = isLight and Config.AccentColor2 or Color3.new(1,1,1)
+            local newC2  = Config.AccentColor2  -- white for dark, darker for light
+            local newMid = Config.AccentColor2  -- mid = white (dark) or darker (light)
             local steps = 12
             for i = 1, steps do
                 local t = i / steps
