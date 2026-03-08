@@ -37,6 +37,7 @@ local Config = {
 local themedElements = {}
 local themedGradients = {} -- UIGradient objects that need ColorSequence updates
 local titleGradRef    = nil  -- reference to title UIGradient
+local tabGradients    = {} -- {gradient, tabBtn} pairs for tab buttons
 
 local function registerThemed(role, obj, prop)
     table.insert(themedElements, {role=role, obj=obj, prop=prop})
@@ -47,13 +48,17 @@ end
 
 -- ═══════════════════════════════════════
 -- SetTheme: меняет цвет акцента везде
+-- AccentColor2 = слегка сдвинутый в светлую сторону тот же цвет
+-- НЕ смешивается с фиолетовым — только варьируется яркость/насыщенность
 -- ═══════════════════════════════════════
 function MinimalUI:SetTheme(color)
     Config.AccentColor = color
     local h, s, v = color:ToHSV()
-    -- Compute accent2: shift hue +15deg, slightly lighter
-    local h2 = (h + 15/360) % 1
-    Config.AccentColor2 = Color3.fromHSV(h2, math.max(0, s - 0.1), math.min(1, v + 0.15))
+    -- AccentColor2: тот же оттенок, чуть светлее и чуть менее насыщен
+    -- НЕ меняем hue — чтобы зелёный оставался зелёным, белый белым
+    local v2 = math.min(1, v + 0.18)
+    local s2 = math.max(0, s - 0.12)
+    Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
 
     local newSeq = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Config.AccentColor),
@@ -73,14 +78,20 @@ function MinimalUI:SetTheme(color)
             g.Color = newSeq
         end
     end
-    -- Update title gradient (accent → white → accent2)
+    -- Restore tab gradient enabled state (only active tab should show gradient)
+    for _, tg in pairs(tabGradients) do
+        if tg.grad and tg.grad.Parent then
+            -- Keep Enabled state as-is (set by selectTab/first tab init)
+        end
+    end
+    -- Update title gradient (accent → accent2 → white → accent2 → accent)
     if titleGradRef and titleGradRef.Parent then
         titleGradRef.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   Config.AccentColor),
+            ColorSequenceKeypoint.new(0,    Config.AccentColor),
             ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
-            ColorSequenceKeypoint.new(0.5, Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(0.5,  Color3.new(1,1,1)),
             ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
-            ColorSequenceKeypoint.new(1,   Config.AccentColor),
+            ColorSequenceKeypoint.new(1,    Config.AccentColor),
         })
     end
 end
@@ -381,16 +392,18 @@ function MinimalUI:CreateWindow(title)
             TextSize = 13, Font = Config.SubFont, Parent = TabBar
         })
         corner(TabBtn, UDim.new(0, 7))
-        registerThemed("accent", TabBtn, "BackgroundColor3")
 
-        -- Gradient for active tab background
-        registerGradient(create("UIGradient", {
+        -- Gradient for active tab background (hidden by default, shown when active)
+        local tabGrad = create("UIGradient", {
             Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Config.AccentColor),
                 ColorSequenceKeypoint.new(1, Config.AccentColor2),
             }),
-            Rotation = 135, Parent = TabBtn
-        }))
+            Rotation = 135, Parent = TabBtn,
+            Enabled = false, -- скрыт пока вкладка не активна
+        })
+        table.insert(tabGradients, {grad = tabGrad, btn = TabBtn})
+        registerGradient(tabGrad)
 
         -- Wrapper Frame: обычный Frame, поддерживает Position tween для анимации вкладок
         local Wrapper = create("Frame", {
@@ -421,14 +434,19 @@ function MinimalUI:CreateWindow(title)
             if tabSwitching or currentTab == Tab then return end
             tabSwitching = true
 
-            -- Деактивируем все кнопки вкладок
+            -- Деактивируем все кнопки вкладок (скрываем градиент, серый текст)
             for _, t in pairs(Window.Tabs) do
                 tween(t.Btn, {BackgroundTransparency = 1})
                 t.Btn.TextColor3 = Config.SubTextColor
+                -- Скрываем градиент на неактивных вкладках
+                for _, tg in pairs(tabGradients) do
+                    if tg.btn == t.Btn then tg.grad.Enabled = false end
+                end
             end
-            -- Активируем выбранную
+            -- Активируем выбранную: показываем градиент, белый текст
             tween(TabBtn, {BackgroundTransparency = 0})
             TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            tabGrad.Enabled = true
 
             -- Скрываем старую вкладку (только Position + TextTransparency — NO BackgroundTransparency на ScrollingFrame/Frame)
             if currentTab and currentTab.Wrapper.Visible then
@@ -488,6 +506,7 @@ function MinimalUI:CreateWindow(title)
             Wrapper.Visible = true
             tween(TabBtn, {BackgroundTransparency = 0})
             TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            tabGrad.Enabled = true -- показываем градиент у первой вкладки
             currentTab = Tab
         end
 
@@ -608,14 +627,25 @@ function MinimalUI:CreateWindow(title)
                     TextXAlignment = Enum.TextXAlignment.Left, Parent = F
                 })
 
-                -- Clickable value label
-                local VBG = create("Frame", {
-                    Size = UDim2.new(0, 50, 0, 20),
-                    Position = UDim2.new(1, -50, 0, -1),
-                    BackgroundColor3 = Config.MainColor,
+                -- Clickable value label with spin arrows
+                local SpinHolder = create("Frame", {
+                    Size = UDim2.new(0, 70, 0, 20),
+                    Position = UDim2.new(1, -70, 0, -1),
                     BackgroundTransparency = 1, Parent = F
                 })
+                local VBG = create("Frame", {
+                    Size = UDim2.new(0, 50, 1, 0),
+                    BackgroundColor3 = Config.MainColor,
+                    BackgroundTransparency = 1, Parent = SpinHolder
+                })
                 corner(VBG, UDim.new(0, 5))
+                local VGrad = create("UIGradient", {
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Config.AccentColor),
+                        ColorSequenceKeypoint.new(1, Config.AccentColor2),
+                    }), Parent = VBG
+                })
+                registerGradient(VGrad)
                 local VLabel = create("TextLabel", {
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
@@ -625,12 +655,6 @@ function MinimalUI:CreateWindow(title)
                     TextXAlignment = Enum.TextXAlignment.Center, Parent = VBG
                 })
                 registerThemed("accent", VLabel, "TextColor3")
-                create("UIGradient", {
-                    Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Config.AccentColor),
-                        ColorSequenceKeypoint.new(1, Config.AccentColor2),
-                    }), Parent = VLabel
-                })
                 local VInput = create("TextBox", {
                     Size = UDim2.new(1, -4, 1, 0),
                     Position = UDim2.new(0, 2, 0, 0),
@@ -645,6 +669,30 @@ function MinimalUI:CreateWindow(title)
                     BackgroundTransparency = 1, Text = "", Parent = VBG
                 })
 
+                -- Spin arrows (up/down) — маленькие кнопки без фона
+                local ArrowsFrame = create("Frame", {
+                    Size = UDim2.new(0, 14, 1, 0),
+                    Position = UDim2.new(0, 52, 0, 0),
+                    BackgroundTransparency = 1, Parent = SpinHolder
+                })
+                local ArrowUp = create("TextButton", {
+                    Size = UDim2.new(1, 0, 0.5, -1),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    Text = "▲", TextColor3 = Config.AccentColor,
+                    TextSize = 8, Font = Config.Font, Parent = ArrowsFrame
+                })
+                registerThemed("accent", ArrowUp, "TextColor3")
+                local ArrowDown = create("TextButton", {
+                    Size = UDim2.new(1, 0, 0.5, -1),
+                    Position = UDim2.new(0, 0, 0.5, 1),
+                    BackgroundTransparency = 1,
+                    Text = "▼", TextColor3 = Config.AccentColor,
+                    TextSize = 8, Font = Config.Font, Parent = ArrowsFrame
+                })
+                registerThemed("accent", ArrowDown, "TextColor3")
+
+                local step = math.max(1, math.floor((max - min) / 100))
                 local targetPct = (val - min)/(max - min)
                 local currentPct = targetPct
 
@@ -709,6 +757,28 @@ function MinimalUI:CreateWindow(title)
                     for _, c in pairs(VBG:GetChildren()) do
                         if c:IsA("UIStroke") then c:Destroy() end
                     end
+                end)
+
+                -- Spin arrow clicks (после объявления Fill и Knob)
+                ArrowUp.MouseButton1Click:Connect(function()
+                    val = math.clamp(val + step, min, max)
+                    local p = (val - min)/(max - min)
+                    targetPct = p; currentPct = p
+                    VLabel.Text = tostring(val)
+                    local snapInfo = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                    TweenService:Create(Fill, snapInfo, {Size = UDim2.new(p,0,1,0)}):Play()
+                    TweenService:Create(Knob, snapInfo, {Position = UDim2.new(p,-7,0.5,-7)}):Play()
+                    callback(val)
+                end)
+                ArrowDown.MouseButton1Click:Connect(function()
+                    val = math.clamp(val - step, min, max)
+                    local p = (val - min)/(max - min)
+                    targetPct = p; currentPct = p
+                    VLabel.Text = tostring(val)
+                    local snapInfo = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                    TweenService:Create(Fill, snapInfo, {Size = UDim2.new(p,0,1,0)}):Play()
+                    TweenService:Create(Knob, snapInfo, {Position = UDim2.new(p,-7,0.5,-7)}):Play()
+                    callback(val)
                 end)
 
                 local sliding = false
