@@ -361,11 +361,11 @@ function MinimalUI:CreateWindow(title)
             Rotation = 135, Parent = TabBtn
         })
 
-        -- Wrapper Frame supports GroupTransparency (unlike ScrollingFrame)
+        -- Wrapper Frame: обычный Frame, поддерживает Position tween для анимации вкладок
         local Wrapper = create("Frame", {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
-            ClipsDescendants = false,
+            ClipsDescendants = true,
             Visible = false,
             Parent = ContentBox
         })
@@ -399,36 +399,55 @@ function MinimalUI:CreateWindow(title)
             tween(TabBtn, {BackgroundTransparency = 0})
             TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-            -- Fade out старой вкладки через Wrapper (GroupTransparency работает на Frame)
+            -- Скрываем старую вкладку: сдвигаем вниз и скрываем через Position + Visible
             if currentTab and currentTab.Wrapper.Visible then
                 local oldW = currentTab.Wrapper
-                local fo = Instance.new("NumberValue")
-                fo.Value = 0
-                fo.Changed:Connect(function(val)
-                    oldW.GroupTransparency = val
-                    oldW.Position = UDim2.new(0, 0, 0, -math.floor(val * 8))
-                end)
-                TweenService:Create(fo, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Value = 1}):Play()
+                -- Плавно сдвигаем вверх через Position
+                TweenService:Create(oldW, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    Position = UDim2.new(0, 0, 0, -8)
+                }):Play()
+                -- Скрываем содержимое через transparency всех прямых детей
+                for _, child in ipairs(oldW:GetDescendants()) do
+                    if child:IsA("Frame") or child:IsA("TextLabel") or
+                       child:IsA("TextButton") or child:IsA("ScrollingFrame") then
+                        if child:IsA("TextLabel") or child:IsA("TextButton") then
+                            TweenService:Create(child, TweenInfo.new(0.12), {TextTransparency = 1}):Play()
+                        end
+                        TweenService:Create(child, TweenInfo.new(0.12), {BackgroundTransparency = 1}):Play()
+                    end
+                end
                 task.wait(0.15)
                 oldW.Visible = false
-                oldW.GroupTransparency = 0
                 oldW.Position = UDim2.new(0, 0, 0, 0)
-                fo:Destroy()
+                -- Восстанавливаем transparency у старых элементов
+                for _, child in ipairs(oldW:GetDescendants()) do
+                    if child:IsA("TextLabel") or child:IsA("TextButton") then
+                        child.TextTransparency = 0
+                    end
+                end
             end
 
-            -- Fade in новой вкладки
-            Wrapper.GroupTransparency = 1
-            Wrapper.Position = UDim2.new(0, 0, 0, 10)
+            -- Показываем новую вкладку: сдвиг снизу + fade in
+            Wrapper.Position = UDim2.new(0, 0, 0, 12)
             Wrapper.Visible = true
-            local fi = Instance.new("NumberValue")
-            fi.Value = 1
-            fi.Changed:Connect(function(val)
-                Wrapper.GroupTransparency = val
-                Wrapper.Position = UDim2.new(0, 0, 0, math.floor((1 - val) * 10))
-            end)
-            TweenService:Create(fi, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Value = 0}):Play()
+            -- Скрываем содержимое перед показом
+            for _, child in ipairs(Wrapper:GetDescendants()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") then
+                    child.TextTransparency = 1
+                end
+            end
+            -- Плавно показываем: сдвиг и появление текста
+            TweenService:Create(Wrapper, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, 0, 0, 0)
+            }):Play()
+            for _, child in ipairs(Wrapper:GetDescendants()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") then
+                    TweenService:Create(child, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                        TextTransparency = 0
+                    }):Play()
+                end
+            end
             task.wait(0.3)
-            fi:Destroy()
 
             currentTab = Tab
             tabSwitching = false
