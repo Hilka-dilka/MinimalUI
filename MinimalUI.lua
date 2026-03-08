@@ -903,9 +903,12 @@ function MinimalUI:CreateWindow(title)
                 registerThemed("btn-text", B, "TextColor3")
 
                 B.MouseButton1Click:Connect(function()
-                    tween(B, {BackgroundColor3 = Color3.fromRGB(200,160,255)}, 0.1)
+                    -- flash: briefly lighten, then restore
+                    local h2,s2,v2 = Config.AccentColor:ToHSV()
+                    local flashCol = Color3.fromHSV(h2, math.max(0, s2*0.5), math.min(1, v2*1.3))
+                    tween(B, {BackgroundColor3 = flashCol}, 0.1)
                     task.wait(0.1)
-                    tween(B, {BackgroundColor3 = Config.AccentColor}, 0.15)
+                    tween(B, {BackgroundColor3 = Config.AccentColor}, 0.2)
                     callback()
                 end)
             end
