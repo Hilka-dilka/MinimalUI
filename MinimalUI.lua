@@ -28,6 +28,7 @@ local Config = {
     TextColor      = Color3.fromRGB(228, 228, 231),
     SubTextColor   = Color3.fromRGB(120, 120, 150),
     BorderColor    = Color3.fromRGB(40, 40, 60),
+    OnAccentText   = Color3.fromRGB(255, 255, 255),  -- текст на кнопках/вкладках
     Font           = Enum.Font.GothamSemibold,
     SubFont        = Enum.Font.Gotham,
     AnimSpeed      = 0.25
@@ -54,17 +55,34 @@ end
 function MinimalUI:SetTheme(color)
     Config.AccentColor = color
     local h, s, v = color:ToHSV()
-    -- AccentColor2: тот же оттенок H, намного менее насыщен (→ белый),
-    -- чуть ярче. Так зелёный даёт бело-зелёный, красный — бело-красный,
-    -- белый — белый, НЕТ примеси фиолетового.
-    local s2 = math.max(0, s * 0.45)          -- намного менее насыщен
-    local v2 = math.min(1, v * 0.75 + 0.30)   -- ярче
-    Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
+
+    -- Perceived luminance to detect light colours
+    local lum = 0.299*color.R + 0.587*color.G + 0.114*color.B
+    local isLight = lum > 0.55
+
+    if isLight then
+        -- Light colour → AccentColor2 is darker shade of the same hue
+        local s2 = math.min(1, s * 1.2 + 0.1)
+        local v2 = math.max(0, v * 0.55)
+        Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
+    else
+        -- Dark colour → AccentColor2 is lighter/desaturated (blends toward white)
+        local s2 = math.max(0, s * 0.45)
+        local v2 = math.min(1, v * 0.75 + 0.30)
+        Config.AccentColor2 = Color3.fromHSV(h, s2, v2)
+    end
+
+    -- Text colour on gradient backgrounds: dark text for light accents, white for dark
+    local onAccentText = isLight
+        and Color3.fromRGB(26, 26, 46)   -- темно-синий для светлых цветов
+        or  Color3.fromRGB(255, 255, 255) -- белый для тёмных
+    Config.OnAccentText = onAccentText
 
     local newSeq = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Config.AccentColor),
         ColorSequenceKeypoint.new(1, Config.AccentColor2),
     })
+
     -- Update flat-color elements
     for _, e in pairs(themedElements) do
         if e.obj and e.obj.Parent then
@@ -73,34 +91,52 @@ function MinimalUI:SetTheme(color)
             }):Play()
         end
     end
+
     -- Update UIGradient objects
     for _, g in pairs(themedGradients) do
         if g and g.Parent then
             g.Color = newSeq
         end
     end
-    -- Update tab text colors: active = white, inactive = SubTextColor
-    -- and keep gradient enabled only for the active tab
+
+    -- Update tab button text + gradient visibility
     for _, tg in pairs(tabGradients) do
         if tg.grad and tg.btn and tg.btn.Parent then
             if tg.grad.Enabled then
-                -- это активная вкладка — текст белый
-                tg.btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                -- активная вкладка — текст зависит от яркости цвета
+                tg.btn.TextColor3 = onAccentText
             else
                 -- неактивная — серый
                 tg.btn.TextColor3 = Config.SubTextColor
             end
         end
     end
-    -- Update title gradient (accent → accent2 → white → accent2 → accent)
+
+    -- Update button text colours
+    for _, e in pairs(themedElements) do
+        if e.role == "btn-text" and e.obj and e.obj.Parent then
+            e.obj.TextColor3 = onAccentText
+        end
+    end
+
+    -- Update title gradient
     if titleGradRef and titleGradRef.Parent then
-        titleGradRef.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,    Config.AccentColor),
-            ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
-            ColorSequenceKeypoint.new(0.5,  Color3.new(1,1,1)),
-            ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
-            ColorSequenceKeypoint.new(1,    Config.AccentColor),
-        })
+        if isLight then
+            titleGradRef.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0,    Config.AccentColor2),
+                ColorSequenceKeypoint.new(0.35, Config.AccentColor),
+                ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
+                ColorSequenceKeypoint.new(1,    Config.AccentColor),
+            })
+        else
+            titleGradRef.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0,    Config.AccentColor),
+                ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
+                ColorSequenceKeypoint.new(0.5,  Color3.new(1,1,1)),
+                ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
+                ColorSequenceKeypoint.new(1,    Config.AccentColor),
+            })
+        end
     end
 end
 
@@ -453,9 +489,9 @@ function MinimalUI:CreateWindow(title)
                     if tg.btn == t.Btn then tg.grad.Enabled = false end
                 end
             end
-            -- Активируем выбранную: показываем градиент, БЕЛЫЙ текст
+            -- Активируем выбранную: показываем градиент, текст зависит от яркости
             TabBtn.BackgroundTransparency = 0
-            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  -- белый у активной
+            TabBtn.TextColor3 = Config.OnAccentText
             tabGrad.Enabled = true
 
             -- Скрываем старую вкладку (только Position + TextTransparency — NO BackgroundTransparency на ScrollingFrame/Frame)
@@ -864,6 +900,7 @@ function MinimalUI:CreateWindow(title)
                     }), Rotation = 135, Parent = B
                 }))
                 registerThemed("accent", B, "BackgroundColor3")
+                registerThemed("btn-text", B, "TextColor3")
 
                 B.MouseButton1Click:Connect(function()
                     tween(B, {BackgroundColor3 = Color3.fromRGB(200,160,255)}, 0.1)
