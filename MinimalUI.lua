@@ -65,8 +65,15 @@ local function stroke(parent, color, thick)
     })
 end
 
+-- Smooth dragging with lerp (elastic follow)
+local RunService = game:GetService("RunService")
+
 local function makeDraggable(frame, handle)
-    local dragging, dragInput, dragStart, startPos
+    local dragging = false
+    local dragInput, dragStart, startPos
+    local targetX, targetY = frame.Position.X.Offset, frame.Position.Y.Offset
+    local currentX, currentY = targetX, targetY
+    local lerpSpeed = 0.14 -- lower = smoother/laggier
 
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -74,6 +81,10 @@ local function makeDraggable(frame, handle)
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
+            targetX = startPos.X.Offset
+            targetY = startPos.Y.Offset
+            currentX = targetX
+            currentY = targetY
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -92,9 +103,21 @@ local function makeDraggable(frame, handle)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
+            targetX = startPos.X.Offset + delta.X
+            targetY = startPos.Y.Offset + delta.Y
+        end
+    end)
+
+    -- Smooth follow on every frame
+    RunService.RenderStepped:Connect(function()
+        local dx = targetX - currentX
+        local dy = targetY - currentY
+        if math.abs(dx) > 0.1 or math.abs(dy) > 0.1 then
+            currentX = currentX + dx * lerpSpeed
+            currentY = currentY + dy * lerpSpeed
             frame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                startPos and startPos.X.Scale or 0.5, currentX,
+                startPos and startPos.Y.Scale or 0.5, currentY
             )
         end
     end)
@@ -122,7 +145,7 @@ function MinimalUI:CreateWindow(title)
         Parent = GUI
     })
     corner(Main, UDim.new(0, 12))
-    stroke(Main)
+    -- no border stroke on main frame
 
     -- Shadow
     create("ImageLabel", {
