@@ -147,8 +147,8 @@ function MinimalUI:CreateWindow(title)
     makeDraggable(Main, TitleBar)
 
     create("TextLabel", {
-        Size = UDim2.new(1, -90, 1, 0),
-        Position = UDim2.new(0, 18, 0, 0),
+        Size = UDim2.new(1, -100, 1, 0),
+        Position = UDim2.new(0, 82, 0, 0),
         BackgroundTransparency = 1,
         Text = title or "MinimalUI",
         TextColor3 = Config.TextColor,
@@ -167,40 +167,65 @@ function MinimalUI:CreateWindow(title)
         Parent = TitleBar
     })
 
-    -- Close / Minimize
-    local CloseBtn = create("TextButton", {
-        Size = UDim2.new(0, 28, 0, 28),
-        Position = UDim2.new(1, -36, 0, 8),
+    -- macOS-style traffic light dots
+    local DotsFrame = create("Frame", {
+        Size = UDim2.new(0, 60, 0, 14),
+        Position = UDim2.new(0, 14, 0.5, -7),
         BackgroundTransparency = 1,
-        Text = "×",
-        TextColor3 = Config.SubTextColor,
-        TextSize = 20,
-        Font = Config.Font,
         Parent = TitleBar
     })
-    CloseBtn.MouseButton1Click:Connect(function()
+    create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 7),
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Parent = DotsFrame
+    })
+
+    local function makeDot(color, order)
+        local dot = create("TextButton", {
+            Size = UDim2.new(0, 13, 0, 13),
+            BackgroundColor3 = color,
+            Text = "",
+            AutoButtonColor = false,
+            LayoutOrder = order,
+            Parent = DotsFrame
+        })
+        corner(dot, UDim.new(1, 0))
+        return dot
+    end
+
+    local CloseDot = makeDot(Color3.fromRGB(255, 95, 87), 1)
+    local MinDot = makeDot(Color3.fromRGB(255, 189, 46), 2)
+    local MaxDot = makeDot(Color3.fromRGB(40, 200, 64), 3)
+
+    -- Close: destroy GUI
+    CloseDot.MouseButton1Click:Connect(function()
         tween(Main, {Size = UDim2.new(0, 580, 0, 0)}, 0.3)
         task.wait(0.3)
         GUI:Destroy()
     end)
 
-    local MinBtn = create("TextButton", {
-        Size = UDim2.new(0, 28, 0, 28),
-        Position = UDim2.new(1, -62, 0, 8),
-        BackgroundTransparency = 1,
-        Text = "−",
-        TextColor3 = Config.SubTextColor,
-        TextSize = 20,
-        Font = Config.Font,
-        Parent = TitleBar
-    })
+    -- Minimize: collapse to title bar
     local minimized = false
-    MinBtn.MouseButton1Click:Connect(function()
+    MinDot.MouseButton1Click:Connect(function()
         minimized = not minimized
         tween(Main, {Size = minimized
             and UDim2.new(0, 580, 0, 44)
             or  UDim2.new(0, 580, 0, 400)
         }, 0.3)
+    end)
+
+    -- Maximize: expand window
+    local maximized = false
+    MaxDot.MouseButton1Click:Connect(function()
+        maximized = not maximized
+        if minimized then
+            minimized = false
+        end
+        tween(Main, {Size = maximized
+            and UDim2.new(0, 800, 0, 550)
+            or  UDim2.new(0, 580, 0, 400)
+        }, 0.35)
     end)
 
     -- Body
