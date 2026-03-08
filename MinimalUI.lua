@@ -92,19 +92,42 @@ function MinimalUI:SetTheme(color)
         end
     end
 
-    -- Update UIGradient objects
+    -- Update UIGradient objects with smooth tween via intermediate steps
     for _, g in pairs(themedGradients) do
         if g and g.Parent then
-            g.Color = newSeq
+            -- Tween gradient by animating through 8 steps over 0.4s
+            task.spawn(function()
+                local oldSeq = g.Color
+                local oldC1 = oldSeq.Keypoints[1].Value
+                local oldC2 = oldSeq.Keypoints[#oldSeq.Keypoints].Value
+                local steps = 12
+                for i = 1, steps do
+                    local t = i / steps
+                    local c1 = oldC1:Lerp(Config.AccentColor, t)
+                    local c2 = oldC2:Lerp(Config.AccentColor2, t)
+                    if g and g.Parent then
+                        g.Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, c1),
+                            ColorSequenceKeypoint.new(1, c2),
+                        })
+                    end
+                    task.wait(0.4 / steps)
+                end
+                if g and g.Parent then
+                    g.Color = newSeq
+                end
+            end)
         end
     end
 
-    -- Update tab button text + gradient visibility
+    -- Update tab button text + gradient visibility (with smooth tween)
     for _, tg in pairs(tabGradients) do
         if tg.grad and tg.btn and tg.btn.Parent then
             if tg.grad.Enabled then
                 -- активная вкладка — текст зависит от яркости цвета
-                tg.btn.TextColor3 = onAccentText
+                TweenService:Create(tg.btn, TweenInfo.new(0.4), {
+                    TextColor3 = onAccentText
+                }):Play()
             else
                 -- неактивная — серый
                 tg.btn.TextColor3 = Config.SubTextColor
@@ -112,31 +135,49 @@ function MinimalUI:SetTheme(color)
         end
     end
 
-    -- Update button text colours
+    -- Update button text colours with smooth tween
     for _, e in pairs(themedElements) do
         if e.role == "btn-text" and e.obj and e.obj.Parent then
-            e.obj.TextColor3 = onAccentText
+            TweenService:Create(e.obj, TweenInfo.new(0.4), {
+                TextColor3 = onAccentText
+            }):Play()
         end
     end
 
-    -- Update title gradient
+    -- Update title gradient with smooth tween over 0.4s
     if titleGradRef and titleGradRef.Parent then
-        if isLight then
-            titleGradRef.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,    Config.AccentColor2),
-                ColorSequenceKeypoint.new(0.35, Config.AccentColor),
-                ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
-                ColorSequenceKeypoint.new(1,    Config.AccentColor),
-            })
-        else
-            titleGradRef.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,    Config.AccentColor),
-                ColorSequenceKeypoint.new(0.35, Config.AccentColor2),
-                ColorSequenceKeypoint.new(0.5,  Color3.new(1,1,1)),
-                ColorSequenceKeypoint.new(0.65, Config.AccentColor2),
-                ColorSequenceKeypoint.new(1,    Config.AccentColor),
-            })
-        end
+        task.spawn(function()
+            local oldSeq = titleGradRef.Color
+            local oldA = oldSeq.Keypoints[1].Value
+            local oldB = oldSeq.Keypoints[#oldSeq.Keypoints].Value
+            local steps = 12
+            for i = 1, steps do
+                local t = i / steps
+                local c1 = oldA:Lerp(isLight and Config.AccentColor2 or Config.AccentColor, t)
+                local c2 = oldB:Lerp(isLight and Config.AccentColor or Config.AccentColor, t)
+                local cMid = Color3.new(1,1,1):Lerp(
+                    isLight and Config.AccentColor or Color3.new(1,1,1), t)
+                if titleGradRef and titleGradRef.Parent then
+                    if isLight then
+                        titleGradRef.Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0,    c1),
+                            ColorSequenceKeypoint.new(0.35, c2),
+                            ColorSequenceKeypoint.new(0.65, c1),
+                            ColorSequenceKeypoint.new(1,    c2),
+                        })
+                    else
+                        titleGradRef.Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0,    c1),
+                            ColorSequenceKeypoint.new(0.35, oldA:Lerp(Config.AccentColor2, t)),
+                            ColorSequenceKeypoint.new(0.5,  cMid),
+                            ColorSequenceKeypoint.new(0.65, oldA:Lerp(Config.AccentColor2, t)),
+                            ColorSequenceKeypoint.new(1,    c1),
+                        })
+                    end
+                end
+                task.wait(0.4 / steps)
+            end
+        end)
     end
 end
 
@@ -489,9 +530,11 @@ function MinimalUI:CreateWindow(title)
                     if tg.btn == t.Btn then tg.grad.Enabled = false end
                 end
             end
-            -- Активируем выбранную: показываем градиент, текст зависит от яркости
+            -- Активируем выбранную: показываем градиент, текст зависит от яркости темы
             TabBtn.BackgroundTransparency = 0
-            TabBtn.TextColor3 = Config.OnAccentText
+            TweenService:Create(TabBtn, TweenInfo.new(0.25), {
+                TextColor3 = Config.OnAccentText
+            }):Play()
             tabGrad.Enabled = true
 
             -- Скрываем старую вкладку (только Position + TextTransparency — NO BackgroundTransparency на ScrollingFrame/Frame)
@@ -551,7 +594,7 @@ function MinimalUI:CreateWindow(title)
         if #Window.Tabs == 0 then
             Wrapper.Visible = true
             TabBtn.BackgroundTransparency = 0
-            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  -- белый у первой
+            TabBtn.TextColor3 = Config.OnAccentText  -- зависит от цвета темы
             tabGrad.Enabled = true -- показываем градиент у первой вкладки
             currentTab = Tab
         end
@@ -889,7 +932,7 @@ function MinimalUI:CreateWindow(title)
                 local B = create("TextButton", {
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundColor3 = Config.AccentColor,
-                    Text = text, TextColor3 = Color3.new(1,1,1),
+                    Text = text, TextColor3 = Config.OnAccentText,
                     TextSize = 13, Font = Config.SubFont, Parent = F
                 })
                 corner(B, UDim.new(0, 7))
