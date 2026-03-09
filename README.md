@@ -5,32 +5,96 @@
     ██║ ╚═╝ ██║██║██║ ╚████║██║██║ ╚═╝ ██║██║  ██║███████╗                 
     ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝ 
 
-A minimalist, beautiful, and powerful UI library for Roblox with dynamic theme support.
+MinimalUI — Roblox Lua UI Library
 
-[𝗠𝗶𝗻𝗶𝗺𝗮𝗹𝗨𝗜](https://019cd07c-e464-738b-98ec-fd0eba17c98e.arena.site/) -- official site for preview
+Hero Section:
+MinimalUI
+Minimalist, beautiful and powerful UI library for Roblox Lua scripts
 
-All UI elements:
+-
 
-⚡
-Toggle
-Smooth switch with spring animation. Easily enable/disable functions.
+𝐀𝐥𝐥 𝐔𝐈 𝐄𝐥𝐞𝐦𝐞𝐧𝐭𝐬:
+A rich set of components for any script
 
-🎚
-Slider
-Slider with lerping animation, lags behind the cursor with a rubber-band effect. You can enter a value manually.
+Тoggle (Smooth animated switch)
 
-▶
-Button
-A button with a ripple effect and a gradient background. The color automatically adapts to the theme.
+Slider (Drag with lerp + manual input)
 
-✏️
-TextBox
-Text input field with an animated focus frame. Placeholder and callback support.
+Button (Gradient button with shimmer)
 
-🎨
-Color Picker
-A full-fledged RGB picker with a saturation field, a hue bar, and numeric R/G/B inputs.
+Dual Button (Two-state toggle button)
 
-🎭
-Dynamic Theme
-Window:SetTheme(Color3) — a single function changes the gradient of all elements simultaneously.
+TextBox (Text input with placeholder)
+
+Keybind (Key capture with listener)
+
+ColorPicker (Full HSV picker + RGB inputs)
+
+Rainbow (Auto-cycling rainbow toggle)
+
+-
+
+𝐇𝐨𝐰 𝐭𝐨 𝐔𝐬𝐞:
+Four steps and your UI is ready
+
+𝗦𝘁𝗲𝗽 𝟭 — 𝗟𝗼𝗮𝗱 𝘁𝗵𝗲 𝗹𝗶𝗯𝗿𝗮𝗿𝘆
+-- Load via loadstring
+local UI = loadstring(game:HttpGet(
+"https://raw.githubusercontent.com/Hilka-dilka/MinimalUI/main/MinimalUI.lua"
+))()
+
+𝗦𝘁𝗲𝗽 𝟮 — 𝗖𝗿𝗲𝗮𝘁𝗲 𝗮 𝘄𝗶𝗻𝗱𝗼𝘄 𝗮𝗻𝗱 𝘁𝗮𝗯𝘀
+local W = UI:CreateWindow("My Hub")
+local Tab = W:CreateTab("⚔ Combat")
+local Sec = Tab:CreateSection("Aura")
+
+
+𝗦𝘁𝗲𝗽 𝟯 — 𝗔𝗱𝗱 𝗲𝗹𝗲𝗺𝗲𝗻𝘁𝘀
+-- Toggle
+Sec:CreateToggle("Kill Aura", false, function(v)
+print("Kill Aura:", v)
+end)
+
+-- Slider
+Sec:CreateSlider("Reach", 5, 50, 15, function(v)
+print("Reach:", v)
+end)
+
+-- Button
+Sec:CreateButton("Lock Target", function()
+print("Locked!")
+end)
+
+-- TextBox
+Sec:CreateTextBox("Player", "Username...", function(t)
+print("Player:", t)
+end)
+
+-- ColorPicker (changes theme)
+Sec:CreateColorPicker("Theme", Color3.fromRGB(124,58,237), function(c)
+W:SetTheme(c)
+end)
+
+-- Keybind
+Sec:CreateKeybind("Toggle Menu", Enum.KeyCode.RightControl, function(k)
+W:SetKey(k)
+end)
+
+𝗦𝘁𝗲𝗽 𝟰 — 𝗔𝗱𝘃𝗮𝗻𝗰𝗲𝗱 𝗳𝗲𝗮𝘁𝘂𝗿𝗲𝘀
+-- Change accent color
+W:SetTheme(Color3.fromRGB(16, 185, 129))
+
+-- Change toggle hotkey
+W:SetKey(Enum.KeyCode.RightControl)
+
+-- Change menu background
+W:SetMenuTheme("light") -- or "dark"
+
+-- Dual button (dark/light switch)
+Sec:CreateDualButton("🌑 Dark", "☀️ Light", "left", function(side)
+W:SetMenuTheme(side == "left" and "dark" or "light")
+end)
+
+-
+
+© 2026 MinimalUI v2.0 — Minimalist Roblox Lua UI Library
