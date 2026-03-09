@@ -28,6 +28,9 @@
     Sec:CreateSlider("Reach", 5, 50, 15, function(v) print(v) end)
     Sec:CreateButton("Reset", function() print("reset") end)
     Sec:CreateTextBox("Player", "Username...", function(t) print(t) end)
+    Sec:CreateKeybind("Toggle Menu", Enum.KeyCode.RightControl, function(k)
+        W:SetKey(k)
+    end)
     Sec:CreateColorPicker("Theme", Color3.fromRGB(124,58,237), function(c)
         W:SetTheme(c)
     end)
@@ -43,7 +46,6 @@ local Players = game:GetService("Players")
 local LP      = Players.LocalPlayer
 
 -- Theme table — all shimmer loops capture T by reference
--- so T.A / T.A2 updated in SetTheme are instantly visible
 local T = {
     A  = Color3.fromRGB(124, 58, 237),
     A2 = Color3.new(1, 1, 1),
@@ -83,14 +85,10 @@ local SAMP = 0.75
 local SSPD = 0.035
 
 -- Text shimmer: darker accent → light → darker accent (readable on any bg)
--- Uses a darkened version of T.A so text is clearly visible
 local function textShimCS()
     local h2, s2, v2 = T.A:ToHSV()
-    -- Darken the accent for text: lower value, keep hue/sat
-    -- This makes text visibly darker than the gradient background
-    local darkA = Color3.fromHSV(h2, math.min(1, s2 * 0.7), math.max(0.15, v2 * 0.45))
-    -- Mid point: near-white but slightly tinted with accent hue
-    local midCol = Color3.fromHSV(h2, math.min(1, s2 * 0.18), 0.92)
+    local darkA  = Color3.fromHSV(h2, math.min(1, s2*0.7),  math.max(0.15, v2*0.45))
+    local midCol = Color3.fromHSV(h2, math.min(1, s2*0.18), 0.92)
     return ColorSequence.new({
         ColorSequenceKeypoint.new(0,   darkA),
         ColorSequenceKeypoint.new(0.5, midCol),
@@ -98,7 +96,7 @@ local function textShimCS()
     })
 end
 
--- Background shimmer: full accent → white (for bg gradients on text elements)
+-- Background shimmer: full accent → white
 local function shimCS()
     return ColorSequence.new({
         ColorSequenceKeypoint.new(0,   T.A),
@@ -120,13 +118,12 @@ local function spawnShim(grad, phase, isText)
 end
 
 local function textShim(lbl, phase)
-    -- TextColor3 must be white so UIGradient colour shows through pure
     lbl.TextColor3 = Color3.new(1, 1, 1)
     local g = Instance.new("UIGradient")
     g.Color    = textShimCS()
     g.Rotation = 0
     g.Parent   = lbl
-    spawnShim(g, phase, true)  -- isText = true → uses textShimCS
+    spawnShim(g, phase, true)
     return g
 end
 
@@ -518,8 +515,8 @@ function MinimalUI:CreateWindow(title)
             end
 
             TBtn.BackgroundTransparency = 0
-            TGrad.Enabled   = true
-            TGrad.Color     = ColorSequence.new(T.A, T.A2)
+            TGrad.Enabled    = true
+            TGrad.Color      = ColorSequence.new(T.A, T.A2)
             TLblGrad.Enabled = true
             TLbl.TextColor3  = Color3.new(1,1,1)
             tabEntry.isActive = true
@@ -710,7 +707,7 @@ function MinimalUI:CreateWindow(title)
                 collapsing = false
             end)
 
-            -- TOGGLE
+            -- ── TOGGLE ───────────────────────────────────────
             function Section:CreateToggle(text, default, callback)
                 callback = callback or function() end
                 local stateRef = {v = default or false}
@@ -773,7 +770,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- SLIDER
+            -- ── SLIDER ───────────────────────────────────────
             function Section:CreateSlider(text, min, max, default, callback)
                 callback = callback or function() end
                 local val = math.clamp(default or min, min, max)
@@ -1016,7 +1013,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- BUTTON
+            -- ── BUTTON ───────────────────────────────────────
             function Section:CreateButton(text, callback)
                 callback = callback or function() end
 
@@ -1057,7 +1054,7 @@ function MinimalUI:CreateWindow(title)
                 end)
             end
 
-            -- TEXTBOX
+            -- ── TEXTBOX ──────────────────────────────────────
             function Section:CreateTextBox(text, placeholder, callback)
                 callback = callback or function() end
 
@@ -1109,7 +1106,103 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- COLOR PICKER
+            -- ── KEYBIND ──────────────────────────────────────
+            function Section:CreateKeybind(text, defaultKey, callback)
+                callback = callback or function() end
+                local key       = defaultKey or Enum.KeyCode.RightControl
+                local listening = false
+                local conn      = nil
+
+                local F = make("Frame", {
+                    Size=UDim2.new(1,0,0,32),
+                    BackgroundTransparency=1,
+                    Parent=Items,
+                })
+                make("TextLabel", {
+                    Size=UDim2.new(0.55,0,1,0),
+                    BackgroundTransparency=1,
+                    Text=text, TextColor3=C.Text,
+                    TextSize=13, Font=C.SubF,
+                    TextXAlignment=Enum.TextXAlignment.Left,
+                    Parent=F,
+                })
+
+                local KBG = make("Frame", {
+                    Size=UDim2.new(0.45,0,0,26),
+                    Position=UDim2.new(0.55,0,0.5,-13),
+                    BackgroundColor3=Color3.new(1,1,1),
+                    Parent=F,
+                })
+                corner(KBG, UDim.new(0,6))
+                bgGrad(KBG, 135)
+
+                local KLbl = make("TextLabel", {
+                    Size=UDim2.new(1,0,1,0),
+                    BackgroundTransparency=1,
+                    Text="["..key.Name.."]",
+                    TextColor3=Color3.new(1,1,1),
+                    TextSize=11, Font=C.Font,
+                    TextXAlignment=Enum.TextXAlignment.Center,
+                    ZIndex=2, Parent=KBG,
+                })
+                textShim(KLbl)
+
+                local KBtn = make("TextButton", {
+                    Size=UDim2.new(1,0,1,0),
+                    BackgroundTransparency=1,
+                    Text="", ZIndex=3,
+                    Parent=KBG,
+                })
+
+                local function stopListening()
+                    listening = false
+                    if conn then conn:Disconnect(); conn = nil end
+                    KLbl.Text = "["..key.Name.."]"
+                    tw(KBG, {BackgroundTransparency=0}, 0.15)
+                end
+
+                local function startListening()
+                    if listening then return end
+                    listening = true
+                    KLbl.Text = "Press any key..."
+
+                    -- Blink animation while waiting
+                    task.spawn(function()
+                        while listening do
+                            tw(KBG, {BackgroundTransparency=0.55}, 0.3)
+                            task.wait(0.32)
+                            if listening then
+                                tw(KBG, {BackgroundTransparency=0}, 0.3)
+                                task.wait(0.32)
+                            end
+                        end
+                    end)
+
+                    conn = UIS.InputBegan:Connect(function(inp, gpe)
+                        if not listening then return end
+                        if inp.UserInputType == Enum.UserInputType.Keyboard then
+                            if inp.KeyCode == Enum.KeyCode.Escape then
+                                stopListening()
+                            else
+                                key = inp.KeyCode
+                                callback(key)
+                                stopListening()
+                            end
+                        end
+                    end)
+                end
+
+                KBtn.MouseButton1Click:Connect(startListening)
+
+                local API = {}
+                function API:Set(k)
+                    key = k
+                    stopListening()
+                end
+                return API
+            end
+
+            -- ── COLOR PICKER ─────────────────────────────────
             function Section:CreateColorPicker(text, default, callback)
                 callback = callback or function() end
                 local col   = default or Color3.fromRGB(255,0,0)
