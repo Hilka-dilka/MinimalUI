@@ -1,10 +1,10 @@
-
 local MinimalUI = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/Hilka-dilka/MinimalUI/refs/heads/main/MinimalUI.lua"
 ))()
 
 
-local Window = MinimalUI:CreateWindow("My Script Hub")
+-- Создание окна
+local Window = MinimalUI:CreateWindow("Alargon's Hub")
 
 -- ═══ TAB: Combat ═══
 local CombatTab = Window:CreateTab("⚔ Combat")
@@ -30,7 +30,7 @@ TargetSection:CreateTextBox("Player", "Username...", function(text)
 end)
 
 -- ═══ TAB: Movement ═══
-local MoveTab = Window:CreateTab("🏃 Movement")
+local MoveTab = Window:CreateTab("𓀟 Movement")
 
 local SpeedSection = MoveTab:CreateSection("Speed")
 
@@ -56,16 +56,26 @@ JumpSection:CreateToggle("Infinite Jump", false, function(v)
     print("Infinite Jump:", v)
 end)
 
-
+-- ═══ TAB: Settings (цвет темы меняет ВСЁ) ═══
 local SettingsTab = Window:CreateTab("⚙ Settings")
 local ThemeSection = SettingsTab:CreateSection("Theme")
 
-
+--[[
+    CreateColorPicker вернёт объект с :Set()
+    Callback вызывается каждый раз при выборе цвета.
+    Window:SetTheme(color) — меняет ВСЕ элементы:
+      • активная вкладка (градиент)
+      • тоглы (фон)
+      • слайдеры (заливка + значение)
+      • кнопки (градиент)
+      • секции (заголовки)
+      • скроллбар
+]]
 ThemeSection:CreateColorPicker(
     "Accent Color",
-    Color3.fromRGB(124, 58, 237),  
+    Color3.fromRGB(124, 58, 237),  -- дефолт: фиолетовый
     function(color)
-
+        -- Меняем тему: градиент станет от выбранного цвета до светлого его варианта
         Window:SetTheme(color)
     end
 )
@@ -93,8 +103,12 @@ end)
 
 local GenSection = SettingsTab:CreateSection("General")
 
-GenSection:CreateTextBox("Toggle Key", "RightControl", function(v)
-    print("Key:", v)
+GenSection:CreateDualButton("🌑 Dark", "☀️ Light", "left", function(side)
+    Window:SetMenuTheme(side == "left" and "dark" or "light")
+end)
+
+GenSection:CreateKeybind("Toggle Menu", Enum.KeyCode.RightControl, function(key)
+    Window:SetKey(key)
 end)
 
 GenSection:CreateButton("Destroy GUI", function()
@@ -103,3 +117,4 @@ end)
 
 -- Hotkey toggle: RightControl
 Window:SetKey(Enum.KeyCode.RightControl)
+
