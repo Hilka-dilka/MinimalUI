@@ -13,7 +13,7 @@ Minimalist, beautiful and powerful UI library for Roblox Lua scripts
 
 -
 
-𝐀𝐥𝐥 𝐔𝐈 𝐄𝐥𝐞𝐦𝐞𝐧𝐭𝐬:
+### 𝐀𝐥𝐥 𝐔𝐈 𝐄𝐥𝐞𝐦𝐞𝐧𝐭𝐬:
 A rich set of components for any script
 
 Тoggle (Smooth animated switch)
