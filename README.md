@@ -7,7 +7,7 @@
 
 A minimalist, beautiful, and powerful UI library for Roblox with dynamic theme support.
 
-[𝗠𝗶𝗻𝗶𝗺𝗮𝗹𝗨𝗜](https://019cd077-97c2-780b-9d5a-6369d5ce5966.arena.site/) -- official site for preview
+[𝗠𝗶𝗻𝗶𝗺𝗮𝗹𝗨𝗜](https://019cd07c-e464-738b-98ec-fd0eba17c98e.arena.site/) -- official site for preview
 
 All UI elements:
 
