@@ -1273,7 +1273,7 @@ end
                 addSep("toggleslider")
 
                 local F = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, enabled and 88 or 44),
+                    Size = UDim2.new(1, 0, 0, enabled and 52 or 36),
                     AutomaticSize = Enum.AutomaticSize.None,
                     BackgroundTransparency = 1,
                     Parent = Items,
@@ -1330,32 +1330,54 @@ end
 
                 -- Нижняя часть: слайдер (скрыт по умолчанию)
                 local SliderContainer = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 44),
-                    Position = UDim2.new(0, 0, 1, 4),
+                    Size = UDim2.new(1, 0, 0, enabled and 52 or 0),
+                    Position = UDim2.new(0, 0, 0, 36),
                     BackgroundTransparency = 1,
-                    Visible = enabled,
+                    ClipsDescendants = true,
+                    Visible = true,
                     Parent = F,
                 })
 
-                -- Текстбокс и стрелки (как в обычном слайдере)
-                local SliderTopRow = make("Frame", {
+                -- Строка со слайдером и текстбоксом
+                local SliderRow = make("Frame", {
                     Size = UDim2.new(1, 0, 0, 20),
                     BackgroundTransparency = 1,
                     Parent = SliderContainer,
                 })
                 
-                local ValHolder = make("Frame", {
-                    Size = UDim2.new(0, 72, 1, 0),
-                    Position = UDim2.new(1, -72, 0, 0),
-                    BackgroundTransparency = 1,
-                    Parent = SliderTopRow,
+                -- Трек слайдера (уже, чтобы поместился текстбокс)
+                local Track = make("Frame", {
+                    Size = UDim2.new(1, -80, 0, 5),
+                    Position = UDim2.new(0, 0, 0.5, -2.5),
+                    BackgroundColor3 = M.Border,
+                    Parent = SliderRow,
                 })
+                corner(Track, UDim.new(1, 0))
+                table.insert(mBorder, Track)
 
-                local VBG = make("Frame", {
-                    Size = UDim2.new(0, 56, 1, 0),
-                    Position = UDim2.new(0, 0, 0, 0),
+                local Fill = make("Frame", {
+                    Size = UDim2.new(pct, 0, 1, 0),
                     BackgroundColor3 = Color3.new(1, 1, 1),
-                    Parent = ValHolder,
+                    Parent = Track,
+                })
+                corner(Fill, UDim.new(1, 0))
+                bgGrad(Fill, 0)
+
+                local Knob = make("Frame", {
+                    Size = UDim2.new(0, 14, 0, 14),
+                    Position = UDim2.new(pct, -7, 0.5, -7),
+                    BackgroundColor3 = Color3.new(1, 1, 1),
+                    ZIndex = 2,
+                    Parent = Track,
+                })
+                corner(Knob, UDim.new(1, 0))
+
+                -- Текстбокс справа от слайдера
+                local VBG = make("Frame", {
+                    Size = UDim2.new(0, 56, 0, 20),
+                    Position = UDim2.new(1, -72, 0.5, -10),
+                    BackgroundColor3 = Color3.new(1, 1, 1),
+                    Parent = SliderRow,
                 })
                 corner(VBG, UDim.new(0, 5))
                 bgGrad(VBG, 135)
@@ -1395,82 +1417,55 @@ end
                     Parent = VBG,
                 })
 
-                -- Стрелки
+                -- Стрелки справа от текстбокса
                 local ArrUpLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 58, 0, 0),
+                    Position = UDim2.new(1, -14, 0, 0),
                     BackgroundTransparency = 1,
                     Text = "▲",
                     TextColor3 = Color3.new(1, 1, 1),
                     TextSize = 8, Font = M.Font,
                     TextXAlignment = Enum.TextXAlignment.Center,
-                    Parent = ValHolder,
+                    Parent = SliderRow,
                 })
                 textShim(ArrUpLbl)
                 local ArrUp = make("TextButton", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 58, 0, 0),
+                    Position = UDim2.new(1, -14, 0, 0),
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
                     ZIndex = 2,
-                    Parent = ValHolder,
+                    Parent = SliderRow,
                 })
 
                 local ArrDnLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 58, 0.5, 1),
+                    Position = UDim2.new(1, -14, 0.5, 1),
                     BackgroundTransparency = 1,
                     Text = "▼",
                     TextColor3 = Color3.new(1, 1, 1),
                     TextSize = 8, Font = M.Font,
                     TextXAlignment = Enum.TextXAlignment.Center,
-                    Parent = ValHolder,
+                    Parent = SliderRow,
                 })
                 textShim(ArrDnLbl)
                 local ArrDn = make("TextButton", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 58, 0.5, 1),
+                    Position = UDim2.new(1, -14, 0.5, 1),
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
                     ZIndex = 2,
-                    Parent = ValHolder,
+                    Parent = SliderRow,
                 })
-
-                -- Трек слайдера
-                local Track = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 5),
-                    Position = UDim2.new(0, 0, 0, 30),
-                    BackgroundColor3 = M.Border,
-                    Parent = SliderContainer,
-                })
-                corner(Track, UDim.new(1, 0))
-                table.insert(mBorder, Track)
-
-                local Fill = make("Frame", {
-                    Size = UDim2.new(pct, 0, 1, 0),
-                    BackgroundColor3 = Color3.new(1, 1, 1),
-                    Parent = Track,
-                })
-                corner(Fill, UDim.new(1, 0))
-                bgGrad(Fill, 0)
-
-                local Knob = make("Frame", {
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(pct, -7, 0.5, -7),
-                    BackgroundColor3 = Color3.new(1, 1, 1),
-                    ZIndex = 2,
-                    Parent = Track,
-                })
-                corner(Knob, UDim.new(1, 0))
 
                 local SlideBtn = make("TextButton", {
-                    Size = UDim2.new(1, 0, 0, 24),
-                    Position = UDim2.new(0, 0, 0, 24),
+                    Size = UDim2.new(1, -80, 0, 24),
+                    Position = UDim2.new(0, 0, 0, -2),
                     BackgroundTransparency = 1,
                     Text = "",
-                    Parent = SliderContainer,
+                    Parent = SliderRow,
                 })
 
                 local function updateSlider(newPct, snap)
@@ -1488,7 +1483,7 @@ end
                     callback(enabled, val)
                 end
 
-                -- Обработчики для слайдера
+                -- Обработчики
                 VBtn.MouseButton1Click:Connect(function()
                     if not enabled then return end
                     VLbl.Visible = false; VBtn.Visible = false
@@ -1572,15 +1567,12 @@ end
                 ToggleBtn.MouseButton1Click:Connect(function()
                     enabled = not enabled
                     
-                    -- Анимация тоггла
                     tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
                     tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
                     
-                    -- Анимация появления/скрытия слайдера
                     if enabled then
-                        SliderContainer.Visible = true
                         SliderContainer.Size = UDim2.new(1, 0, 0, 0)
-                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 44)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 52)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                         tw(F, {Size = UDim2.new(1, 0, 0, 88)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                         task.wait(0.15)
                         for _, d in ipairs(SliderContainer:GetDescendants()) do
@@ -1596,16 +1588,15 @@ end
                         end
                         task.wait(0.15)
                         tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-                        tw(F, {Size = UDim2.new(1, 0, 0, 44)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 36)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                         task.wait(0.25)
-                        SliderContainer.Visible = false
-                        SliderContainer.Size = UDim2.new(1, 0, 0, 44)
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 52)
                     end
                     
                     callback(enabled, val)
                 end)
 
-                -- API для управления
+                -- API
                 local API = {}
                 function API:SetEnabled(state)
                     if state == enabled then return end
@@ -1614,16 +1605,14 @@ end
                     tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
                     
                     if enabled then
-                        SliderContainer.Visible = true
                         SliderContainer.Size = UDim2.new(1, 0, 0, 0)
-                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 44)}, 0.3)
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 52)}, 0.3)
                         tw(F, {Size = UDim2.new(1, 0, 0, 88)}, 0.3)
                     else
                         tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.25)
-                        tw(F, {Size = UDim2.new(1, 0, 0, 44)}, 0.25)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 36)}, 0.25)
                         task.wait(0.25)
-                        SliderContainer.Visible = false
-                        SliderContainer.Size = UDim2.new(1, 0, 0, 44)
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 52)
                     end
                     callback(enabled, val)
                 end
@@ -1650,7 +1639,6 @@ end
                 
                 return API
             end
-
 
       
             -- ── TEXTBOX ──────────────────────────────────────
