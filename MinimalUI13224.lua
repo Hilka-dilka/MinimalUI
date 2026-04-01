@@ -934,19 +934,19 @@ end
                     Parent = ValHolder,
                 })
 
-                local Track = make("Frame", {
+                local  = make("Frame", {
                     Size = UDim2.new(1, 0, 0, 5),
                     Position = UDim2.new(0, 0, 0, 30),
                     BackgroundColor3 = M.Border,
                     Parent = F,
                 })
-                corner(Track, UDim.new(1, 0))
-                table.insert(mBorder, Track)
+                corner(, UDim.new(1, 0))
+                table.insert(mBorder, )
 
                 local Fill = make("Frame", {
                     Size = UDim2.new(pct, 0, 1, 0),
                     BackgroundColor3 = Color3.new(1, 1, 1),
-                    Parent = Track,
+                    Parent = ,
                 })
                 corner(Fill, UDim.new(1, 0))
                 bgGrad(Fill, 0)
@@ -956,7 +956,7 @@ end
                     Position = UDim2.new(pct, -7, 0.5, -7),
                     BackgroundColor3 = Color3.new(1, 1, 1),
                     ZIndex = 2,
-                    Parent = Track,
+                    Parent = ,
                 })
                 corner(Knob, UDim.new(1, 0))
 
@@ -1028,7 +1028,7 @@ end
                     if sliding and (inp.UserInputType == Enum.UserInputType.MouseMovement
                     or inp.UserInputType == Enum.UserInputType.Touch) then
                         tgPct = math.clamp(
-                            (inp.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
+                            (inp.Position.X - .AbsolutePosition.X) / .AbsoluteSize.X, 0, 1)
                     end
                 end)
                 RS.RenderStepped:Connect(function()
@@ -1590,7 +1590,7 @@ end
                         tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                         tw(F, {Size = UDim2.new(1, 0, 0, 36)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                         task.wait(0.25)
-                        SliderContainer.Size = UDim2.new(1, 0, 0, 52)
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 40)
                     end
                     
                     callback(enabled, val)
@@ -1599,7 +1599,7 @@ end
 
                 -- Отступ после элемента (вместо addSep)
                 local bottomSpacing = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 2),  -- ← МЕНЯЙ ЗДЕСЬ (2 пикселя)
+                    Size = UDim2.new(1, 0, 0, 0),  -- ← МЕНЯЙ ЗДЕСЬ (2 пикселя)
                     BackgroundTransparency = 1,
                     Parent = Items,
                 })
@@ -1616,7 +1616,7 @@ end
                 
                 -- Еще один отступ снизу
                 local bottomSpacing2 = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 2),  -- ← МЕНЯЙ ЗДЕСЬ
+                    Size = UDim2.new(1, 0, 0, 0),  -- ← МЕНЯЙ ЗДЕСЬ
                     BackgroundTransparency = 1,
                     Parent = Items,
                 })
@@ -1631,13 +1631,13 @@ end
                     
                     if enabled then
                         SliderContainer.Size = UDim2.new(1, 0, 0, 0)
-                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 52)}, 0.3)
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 40)}, 0.3)
                         tw(F, {Size = UDim2.new(1, 0, 0, 88)}, 0.3)
                     else
                         tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.25)
                         tw(F, {Size = UDim2.new(1, 0, 0, 36)}, 0.25)
                         task.wait(0.25)
-                        SliderContainer.Size = UDim2.new(1, 0, 0, 52)
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 40)
                     end
                     callback(enabled, val)
                 end
