@@ -7,11 +7,10 @@
 
 ### MinimalUI — Roblox Lua UI Library
 
-Hero Section:
-MinimalUI
-Minimalist, beautiful and powerful UI library for Roblox Lua scripts
 
+MinimalUI — Minimalist, beautiful and powerful UI library for Roblox Lua scripts
 
+o
 
 ## 𝐀𝐥𝐥 𝐔𝐈 𝐄𝐥𝐞𝐦𝐞𝐧𝐭𝐬:
 A rich set of components for any script
@@ -32,7 +31,7 @@ Keybind (Key capture with listener)
 
 ColorPicker (Full HSV picker + RGB inputs)
 
-
+o
 
 # 𝐇𝐨𝐰 𝐭𝐨 𝐔𝐬𝐞:
 Five steps and your UI is ready
@@ -163,7 +162,7 @@ end)
 color:Set(Color3.fromRGB(255, 100, 50))  -- Change color
 ```
 
-
+o
 
 # 𝐖𝐡𝐲 𝐔𝐬𝐞 𝐀𝐏𝐈?
 Load and save settings — Save user preferences and restore them on script restart
@@ -201,7 +200,7 @@ end)
 -- print(aura:GetValue())   -- Print current range
 ```
 
--
+o
 
 ## 𝐐𝐮𝐢𝐜𝐤 𝐑𝐞𝐟𝐞𝐫𝐞𝐧𝐜𝐞
 
