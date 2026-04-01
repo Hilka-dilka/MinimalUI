@@ -1330,7 +1330,7 @@ end
 
                 -- Нижняя часть: слайдер (скрыт по умолчанию)
                 local SliderContainer = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, enabled and 40 or 0),
+                    Size = UDim2.new(1, 0, 0, enabled and 36 or 0),
                     Position = UDim2.new(0, 0, 0, 36),
                     BackgroundTransparency = 1,
                     ClipsDescendants = true,
