@@ -109,7 +109,7 @@ W:SetKey(Enum.KeyCode.RightControl)
 -- Change menu background
 W:SetMenuTheme("light") -- or "dark"
 ```
-𝗦𝘁𝗲𝗽 𝟱 — 𝗔𝗣𝗜 𝗖𝗼𝗻𝘁𝗿𝗼𝗹 (Programmatic Management)
+𝗦𝘁𝗲𝗽 𝟱 — 𝗔𝗣𝗜 𝗖𝗼𝗻𝘁𝗿𝗼𝗹 (Programmatic Management) [ *For those who know Lua. For those who don't, it doesn't matter* ]
 
 API (Application Programming Interface) allows you to control UI elements from your code without clicking them. Each element returns an API object that you can use to change its state programmatically.
 
