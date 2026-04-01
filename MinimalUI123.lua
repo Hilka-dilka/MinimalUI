@@ -1271,23 +1271,20 @@ end
                 local pct = (val - min) / (max - min)
                 local enabled = toggleDefault or false
                 addSep("toggleslider")
-                
+
                 local F = make("Frame", {
                     Size = UDim2.new(1, 0, 0, 52),
                     BackgroundTransparency = 1,
                     Parent = Items,
                 })
-                
-                -- Верхний ряд: текст + тоггл + текстбокс
+
                 local TopRow = make("Frame", {
                     Size = UDim2.new(1, 0, 0, 20),
                     BackgroundTransparency = 1,
                     Parent = F,
                 })
-                
-                -- Текст слева
                 local Lbl = make("TextLabel", {
-                    Size = UDim2.new(0.4, 0, 1, 0),
+                    Size = UDim2.new(1, -116, 1, 0),
                     BackgroundTransparency = 1,
                     Text = text,
                     TextColor3 = M.Text,
@@ -1296,21 +1293,13 @@ end
                     Parent = TopRow,
                 })
                 table.insert(mText, Lbl)
-                
-                -- Контейнер для тоггла и текстбокса
-                local RightContainer = make("Frame", {
-                    Size = UDim2.new(0.6, 0, 1, 0),
-                    Position = UDim2.new(0.4, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Parent = TopRow,
-                })
-                
-                -- Тоггл (слева от текстбокса)
+
+                -- Тоггл (добавлен слева от текстбокса)
                 local ToggleFrame = make("Frame", {
                     Size = UDim2.new(0, 38, 0, 20),
-                    Position = UDim2.new(0, 0, 0.5, -10),
+                    Position = UDim2.new(1, -110, 0.5, -10),
                     BackgroundTransparency = 1,
-                    Parent = RightContainer,
+                    Parent = TopRow,
                 })
                 
                 local ToggleBG = make("Frame", {
@@ -1335,18 +1324,17 @@ end
                     Text = "",
                     Parent = ToggleFrame,
                 })
-                
-                -- Текстбокс (как в обычном слайдере)
+
                 local ValHolder = make("Frame", {
                     Size = UDim2.new(0, 72, 1, 0),
                     Position = UDim2.new(1, -72, 0, 0),
                     BackgroundTransparency = 1,
-                    Parent = RightContainer,
+                    Parent = TopRow,
                 })
-                
+
                 local VBG = make("Frame", {
                     Size = UDim2.new(0, 56, 1, 0),
-                    Position = UDim2.new(0, 44, 0, 0),  -- 44px отступ для тоггла
+                    Position = UDim2.new(0, 0, 0, 0),
                     BackgroundColor3 = Color3.new(1, 1, 1),
                     Parent = ValHolder,
                 })
@@ -1354,7 +1342,7 @@ end
                 bgGrad(VBG, 135)
                 mkStroke(VBG, M.Border, 1, 0.45)
                 table.insert(mMain, VBG)
-                
+
                 local VLbl = make("TextLabel", {
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
@@ -1366,7 +1354,7 @@ end
                     Parent = VBG,
                 })
                 textShim(VLbl)
-                
+
                 local VInput = make("TextBox", {
                     Size = UDim2.new(1, -4, 1, 0),
                     Position = UDim2.new(0, 2, 0, 0),
@@ -1380,7 +1368,6 @@ end
                     ZIndex = 3,
                     Parent = VBG,
                 })
-                
                 local VBtn = make("TextButton", {
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
@@ -1388,53 +1375,51 @@ end
                     ZIndex = 4,
                     Parent = VBG,
                 })
-                
-                -- Стрелки вверх/вниз
+
+                -- Arrow up
                 local ArrUpLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 116, 0, 0),
+                    Position = UDim2.new(0, 58, 0, 0),
                     BackgroundTransparency = 1,
                     Text = "▲",
                     TextColor3 = Color3.new(1, 1, 1),
                     TextSize = 8, Font = M.Font,
                     TextXAlignment = Enum.TextXAlignment.Center,
-                    Parent = RightContainer,
+                    Parent = ValHolder,
                 })
                 textShim(ArrUpLbl)
-                
                 local ArrUp = make("TextButton", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 116, 0, 0),
+                    Position = UDim2.new(0, 58, 0, 0),
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
                     ZIndex = 2,
-                    Parent = RightContainer,
+                    Parent = ValHolder,
                 })
-                
+
+                -- Arrow down
                 local ArrDnLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 116, 0.5, 1),
+                    Position = UDim2.new(0, 58, 0.5, 1),
                     BackgroundTransparency = 1,
                     Text = "▼",
                     TextColor3 = Color3.new(1, 1, 1),
                     TextSize = 8, Font = M.Font,
                     TextXAlignment = Enum.TextXAlignment.Center,
-                    Parent = RightContainer,
+                    Parent = ValHolder,
                 })
                 textShim(ArrDnLbl)
-                
                 local ArrDn = make("TextButton", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 116, 0.5, 1),
+                    Position = UDim2.new(0, 58, 0.5, 1),
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
                     ZIndex = 2,
-                    Parent = RightContainer,
+                    Parent = ValHolder,
                 })
-                
-                -- Трек слайдера
+
                 local Track = make("Frame", {
                     Size = UDim2.new(1, 0, 0, 5),
                     Position = UDim2.new(0, 0, 0, 30),
@@ -1443,7 +1428,7 @@ end
                 })
                 corner(Track, UDim.new(1, 0))
                 table.insert(mBorder, Track)
-                
+
                 local Fill = make("Frame", {
                     Size = UDim2.new(pct, 0, 1, 0),
                     BackgroundColor3 = Color3.new(1, 1, 1),
@@ -1451,7 +1436,7 @@ end
                 })
                 corner(Fill, UDim.new(1, 0))
                 bgGrad(Fill, 0)
-                
+
                 local Knob = make("Frame", {
                     Size = UDim2.new(0, 14, 0, 14),
                     Position = UDim2.new(pct, -7, 0.5, -7),
@@ -1460,7 +1445,7 @@ end
                     Parent = Track,
                 })
                 corner(Knob, UDim.new(1, 0))
-                
+
                 local SlideBtn = make("TextButton", {
                     Size = UDim2.new(1, 0, 0, 24),
                     Position = UDim2.new(0, 0, 0, 24),
@@ -1468,21 +1453,19 @@ end
                     Text = "",
                     Parent = F,
                 })
-                
-                -- Затемнение слайдера если выключен
+
                 local function updateSliderState()
                     Track.BackgroundTransparency = enabled and 0.3 or 0.7
                     Fill.BackgroundTransparency = enabled and 0 or 0.6
                     Knob.BackgroundTransparency = enabled and 0 or 0.6
                     VBG.BackgroundTransparency = enabled and 0 or 0.4
                     VLbl.TextTransparency = enabled and 0 or 0.5
-                    
-                    SlideBtn.Visible = enabled
                     VBtn.Visible = enabled
                     ArrUp.Visible = enabled
                     ArrDn.Visible = enabled
+                    SlideBtn.Visible = enabled
                 end
-                
+
                 local function updateSlider(newPct, snap)
                     pct = math.clamp(newPct, 0, 1)
                     val = math.floor(min + (max - min) * pct)
@@ -1492,14 +1475,14 @@ end
                         TS:Create(Fill, si, {Size = UDim2.new(pct, 0, 1, 0)}):Play()
                         TS:Create(Knob, si, {Position = UDim2.new(pct, -7, 0.5, -7)}):Play()
                     else
-                        Fill.Size = UDim2.new(pct, 0, 1, 0)
+                        Fill.Size     = UDim2.new(pct, 0, 1, 0)
                         Knob.Position = UDim2.new(pct, -7, 0.5, -7)
                     end
                     if enabled then
                         callback(enabled, val)
                     end
                 end
-                
+
                 ToggleBtn.MouseButton1Click:Connect(function()
                     enabled = not enabled
                     tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
@@ -1507,46 +1490,38 @@ end
                     updateSliderState()
                     callback(enabled, val)
                 end)
-                
+
                 VBtn.MouseButton1Click:Connect(function()
                     if not enabled then return end
-                    VLbl.Visible = false
-                    VBtn.Visible = false
-                    VInput.Visible = true
-                    VInput.Text = tostring(val)
+                    VLbl.Visible = false; VBtn.Visible = false
+                    VInput.Visible = true; VInput.Text = tostring(val)
                     VInput:CaptureFocus()
                 end)
-                
                 VInput.FocusLost:Connect(function()
                     if not enabled then
-                        VLbl.Visible = true
-                        VBtn.Visible = true
-                        VInput.Visible = false
+                        VLbl.Visible = true; VBtn.Visible = true; VInput.Visible = false
                         return
                     end
                     local n = tonumber(VInput.Text)
                     if n then
                         updateSlider((math.clamp(math.floor(n), min, max) - min) / (max - min), true)
                     end
-                    VLbl.Visible = true
-                    VBtn.Visible = true
-                    VInput.Visible = false
+                    VLbl.Visible = true; VBtn.Visible = true; VInput.Visible = false
                 end)
-                
+
                 ArrUp.MouseButton1Click:Connect(function()
                     if not enabled then return end
                     updateSlider((math.clamp(val + 1, min, max) - min) / (max - min), true)
                 end)
-                
                 ArrDn.MouseButton1Click:Connect(function()
                     if not enabled then return end
                     updateSlider((math.clamp(val - 1, min, max) - min) / (max - min), true)
                 end)
-                
+
                 local sliding = false
-                local tgPct = pct
-                local curPct = pct
-                
+                local tgPct   = pct
+                local curPct  = pct
+
                 SlideBtn.InputBegan:Connect(function(inp)
                     if not enabled then return end
                     if inp.UserInputType == Enum.UserInputType.MouseButton1
@@ -1555,19 +1530,16 @@ end
                         tw(Knob, {Size = UDim2.new(0, 18, 0, 18)}, 0.15)
                     end
                 end)
-                
                 UIS.InputEnded:Connect(function(inp)
                     if (inp.UserInputType == Enum.UserInputType.MouseButton1
                     or inp.UserInputType == Enum.UserInputType.Touch) and sliding then
-                        sliding = false
-                        curPct = tgPct
+                        sliding = false; curPct = tgPct
                         local si = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
                         TS:Create(Fill, si, {Size = UDim2.new(tgPct, 0, 1, 0)}):Play()
                         TS:Create(Knob, si, {Position = UDim2.new(tgPct, -7, 0.5, -7)}):Play()
                         tw(Knob, {Size = UDim2.new(0, 14, 0, 14)}, 0.2)
                     end
                 end)
-                
                 UIS.InputChanged:Connect(function(inp)
                     if sliding and enabled and (inp.UserInputType == Enum.UserInputType.MouseMovement
                     or inp.UserInputType == Enum.UserInputType.Touch) then
@@ -1575,7 +1547,6 @@ end
                             (inp.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                     end
                 end)
-                
                 RS.RenderStepped:Connect(function()
                     if not sliding then return end
                     if not enabled then
@@ -1585,16 +1556,16 @@ end
                     local d = tgPct - curPct
                     if math.abs(d) > 0.001 then
                         curPct = curPct + d * 0.18
-                        Fill.Size = UDim2.new(curPct, 0, 1, 0)
+                        Fill.Size     = UDim2.new(curPct, 0, 1, 0)
                         Knob.Position = UDim2.new(curPct, -7, 0.5, -7)
                         val = math.floor(min + (max - min) * curPct)
                         VLbl.Text = tostring(val)
                         callback(enabled, val)
                     end
                 end)
-                
+
                 updateSliderState()
-                
+
                 local API = {}
                 function API:SetEnabled(state)
                     enabled = state
@@ -1607,8 +1578,7 @@ end
                 function API:SetValue(v)
                     val = math.clamp(v, min, max)
                     pct = (val - min) / (max - min)
-                    tgPct = pct
-                    curPct = pct
+                    tgPct = pct; curPct = pct
                     VLbl.Text = tostring(val)
                     tw(Fill, {Size = UDim2.new(pct, 0, 1, 0)})
                     tw(Knob, {Position = UDim2.new(pct, -7, 0.5, -7)})
