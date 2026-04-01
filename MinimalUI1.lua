@@ -1336,7 +1336,7 @@ end
                     Parent = ToggleFrame,
                 })
                 
-                -- Текстбокс справа от тоггла
+                -- Текстбокс (как в обычном слайдере)
                 local ValHolder = make("Frame", {
                     Size = UDim2.new(0, 72, 1, 0),
                     Position = UDim2.new(1, -72, 0, 0),
@@ -1346,7 +1346,7 @@ end
                 
                 local VBG = make("Frame", {
                     Size = UDim2.new(0, 56, 1, 0),
-                    Position = UDim2.new(0, 44, 0, 0),
+                    Position = UDim2.new(0, 44, 0, 0),  -- 44px отступ для тоггла
                     BackgroundColor3 = Color3.new(1, 1, 1),
                     Parent = ValHolder,
                 })
@@ -1392,7 +1392,7 @@ end
                 -- Стрелки вверх/вниз
                 local ArrUpLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 102, 0, 0),
+                    Position = UDim2.new(0, 116, 0, 0),
                     BackgroundTransparency = 1,
                     Text = "▲",
                     TextColor3 = Color3.new(1, 1, 1),
@@ -1404,7 +1404,7 @@ end
                 
                 local ArrUp = make("TextButton", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 102, 0, 0),
+                    Position = UDim2.new(0, 116, 0, 0),
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
@@ -1414,7 +1414,7 @@ end
                 
                 local ArrDnLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 102, 0.5, 1),
+                    Position = UDim2.new(0, 116, 0.5, 1),
                     BackgroundTransparency = 1,
                     Text = "▼",
                     TextColor3 = Color3.new(1, 1, 1),
@@ -1426,7 +1426,7 @@ end
                 
                 local ArrDn = make("TextButton", {
                     Size = UDim2.new(0, 14, 0.5, -1),
-                    Position = UDim2.new(0, 102, 0.5, 1),
+                    Position = UDim2.new(0, 116, 0.5, 1),
                     BackgroundTransparency = 1,
                     Text = "",
                     AutoButtonColor = false,
@@ -1461,19 +1461,26 @@ end
                 })
                 corner(Knob, UDim.new(1, 0))
                 
+                local SlideBtn = make("TextButton", {
+                    Size = UDim2.new(1, 0, 0, 24),
+                    Position = UDim2.new(0, 0, 0, 24),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    Parent = F,
+                })
+                
                 -- Затемнение слайдера если выключен
                 local function updateSliderState()
-                    local alpha = enabled and 1 or 0.4
                     Track.BackgroundTransparency = enabled and 0.3 or 0.7
                     Fill.BackgroundTransparency = enabled and 0 or 0.6
                     Knob.BackgroundTransparency = enabled and 0 or 0.6
                     VBG.BackgroundTransparency = enabled and 0 or 0.4
                     VLbl.TextTransparency = enabled and 0 or 0.5
                     
-                    SlideBtn.Active = enabled
-                    VBtn.Active = enabled
-                    ArrUp.Active = enabled
-                    ArrDn.Active = enabled
+                    SlideBtn.Visible = enabled
+                    VBtn.Visible = enabled
+                    ArrUp.Visible = enabled
+                    ArrDn.Visible = enabled
                 end
                 
                 local function updateSlider(newPct, snap)
@@ -1539,14 +1546,6 @@ end
                 local sliding = false
                 local tgPct = pct
                 local curPct = pct
-                
-                local SlideBtn = make("TextButton", {
-                    Size = UDim2.new(1, 0, 0, 24),
-                    Position = UDim2.new(0, 0, 0, 24),
-                    BackgroundTransparency = 1,
-                    Text = "",
-                    Parent = F,
-                })
                 
                 SlideBtn.InputBegan:Connect(function(inp)
                     if not enabled then return end
