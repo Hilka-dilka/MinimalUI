@@ -1273,7 +1273,7 @@ end
                 addSep("toggleslider")
 
                 local F = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, enabled and 52 or 36),
+                    Size = UDim2.new(1, 0, 0, enabled and 42 or 36),
                     AutomaticSize = Enum.AutomaticSize.None,
                     BackgroundTransparency = 1,
                     Parent = Items,
