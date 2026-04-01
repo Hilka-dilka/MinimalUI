@@ -1270,7 +1270,7 @@ end
                 local val = math.clamp(default or min, min, max)
                 local pct = (val - min) / (max - min)
                 local enabled = toggleDefault or false
-                addSep("toggleslider")
+                -- addSep("toggleslider")
 
                 local F = make("Frame", {
                     Size = UDim2.new(1, 0, 0, enabled and 36 or 36),
@@ -1596,6 +1596,31 @@ end
                     callback(enabled, val)
                 end)
 
+
+                -- Отступ после элемента (вместо addSep)
+                local bottomSpacing = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 2),  -- ← МЕНЯЙ ЗДЕСЬ (2 пикселя)
+                    BackgroundTransparency = 1,
+                    Parent = Items,
+                })
+                
+                -- Разделительная линия (если нужна)
+                local sepLine = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 1),
+                    BackgroundColor3 = M.Border,
+                    BackgroundTransparency = 0.5,
+                    BorderSizePixel = 0,
+                    Parent = Items,
+                })
+                table.insert(mBorder, sepLine)
+                
+                -- Еще один отступ снизу
+                local bottomSpacing2 = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 2),  -- ← МЕНЯЙ ЗДЕСЬ
+                    BackgroundTransparency = 1,
+                    Parent = Items,
+                })
+                
                 -- API
                 local API = {}
                 function API:SetEnabled(state)
