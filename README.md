@@ -165,11 +165,11 @@ color:Set(Color3.fromRGB(255, 100, 50))  -- Change color
 o
 
 # 𝐖𝐡𝐲 𝐔𝐬𝐞 𝐀𝐏𝐈?
-Load and save settings — Save user preferences and restore them on script restart
-Create hotkeys — Bind keyboard keys to toggle elements
-Synchronize multiple elements — Control several elements with one action
-Automate actions — Trigger UI changes based on game events
-Reset values — Return elements to default state with one function call
+--Load and save settings — Save user preferences and restore them on script restart.
+--Create hotkeys — Bind keyboard keys to toggle elements.
+--Synchronize multiple elements — Control several elements with one action.
+--Automate actions — Trigger UI changes based on game events.
+--Reset values — Return elements to default state with one function call.
 
 𝐂𝐨𝐦𝐩𝐥𝐞𝐭𝐞 𝐄𝐱𝐚𝐦𝐩𝐥𝐞:
 ```lua
