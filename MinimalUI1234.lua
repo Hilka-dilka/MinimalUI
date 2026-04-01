@@ -1264,7 +1264,7 @@ end
                 return API
             end
 
-                        -- ── TOGGLE SLIDER ───────────────────────────────────
+                        -- ── TOGGLE SLIDER (с анимацией) ─────────────────────
             function Section:CreateToggleSlider(text, min, max, default, toggleDefault, callback)
                 callback = callback or function() end
                 local val = math.clamp(default or min, min, max)
@@ -1273,18 +1273,21 @@ end
                 addSep("toggleslider")
 
                 local F = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 52),
+                    Size = UDim2.new(1, 0, 0, enabled and 88 or 44),
+                    AutomaticSize = Enum.AutomaticSize.None,
                     BackgroundTransparency = 1,
                     Parent = Items,
                 })
 
+                -- Верхняя часть: текст + тоггл
                 local TopRow = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 20),
+                    Size = UDim2.new(1, 0, 0, 36),
                     BackgroundTransparency = 1,
                     Parent = F,
                 })
+                
                 local Lbl = make("TextLabel", {
-                    Size = UDim2.new(1, -116, 1, 0),
+                    Size = UDim2.new(1, -50, 1, 0),
                     BackgroundTransparency = 1,
                     Text = text,
                     TextColor3 = M.Text,
@@ -1294,10 +1297,10 @@ end
                 })
                 table.insert(mText, Lbl)
 
-                -- Тоггл (добавлен слева от текстбокса)
+                -- Тоггл (справа)
                 local ToggleFrame = make("Frame", {
                     Size = UDim2.new(0, 38, 0, 20),
-                    Position = UDim2.new(1, -110, 0.5, -10),
+                    Position = UDim2.new(1, -38, 0.5, -10),
                     BackgroundTransparency = 1,
                     Parent = TopRow,
                 })
@@ -1325,11 +1328,27 @@ end
                     Parent = ToggleFrame,
                 })
 
+                -- Нижняя часть: слайдер (скрыт по умолчанию)
+                local SliderContainer = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 44),
+                    Position = UDim2.new(0, 0, 1, 4),
+                    BackgroundTransparency = 1,
+                    Visible = enabled,
+                    Parent = F,
+                })
+
+                -- Текстбокс и стрелки (как в обычном слайдере)
+                local SliderTopRow = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 20),
+                    BackgroundTransparency = 1,
+                    Parent = SliderContainer,
+                })
+                
                 local ValHolder = make("Frame", {
                     Size = UDim2.new(0, 72, 1, 0),
                     Position = UDim2.new(1, -72, 0, 0),
                     BackgroundTransparency = 1,
-                    Parent = TopRow,
+                    Parent = SliderTopRow,
                 })
 
                 local VBG = make("Frame", {
@@ -1376,7 +1395,7 @@ end
                     Parent = VBG,
                 })
 
-                -- Arrow up
+                -- Стрелки
                 local ArrUpLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
                     Position = UDim2.new(0, 58, 0, 0),
@@ -1398,7 +1417,6 @@ end
                     Parent = ValHolder,
                 })
 
-                -- Arrow down
                 local ArrDnLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
                     Position = UDim2.new(0, 58, 0.5, 1),
@@ -1420,11 +1438,12 @@ end
                     Parent = ValHolder,
                 })
 
+                -- Трек слайдера
                 local Track = make("Frame", {
                     Size = UDim2.new(1, 0, 0, 5),
                     Position = UDim2.new(0, 0, 0, 30),
                     BackgroundColor3 = M.Border,
-                    Parent = F,
+                    Parent = SliderContainer,
                 })
                 corner(Track, UDim.new(1, 0))
                 table.insert(mBorder, Track)
@@ -1451,20 +1470,8 @@ end
                     Position = UDim2.new(0, 0, 0, 24),
                     BackgroundTransparency = 1,
                     Text = "",
-                    Parent = F,
+                    Parent = SliderContainer,
                 })
-
-                local function updateSliderState()
-                    Track.BackgroundTransparency = enabled and 0.3 or 0.7
-                    Fill.BackgroundTransparency = enabled and 0 or 0.6
-                    Knob.BackgroundTransparency = enabled and 0 or 0.6
-                    VBG.BackgroundTransparency = enabled and 0 or 0.4
-                    VLbl.TextTransparency = enabled and 0 or 0.5
-                    VBtn.Visible = enabled
-                    ArrUp.Visible = enabled
-                    ArrDn.Visible = enabled
-                    SlideBtn.Visible = enabled
-                end
 
                 local function updateSlider(newPct, snap)
                     pct = math.clamp(newPct, 0, 1)
@@ -1475,28 +1482,20 @@ end
                         TS:Create(Fill, si, {Size = UDim2.new(pct, 0, 1, 0)}):Play()
                         TS:Create(Knob, si, {Position = UDim2.new(pct, -7, 0.5, -7)}):Play()
                     else
-                        Fill.Size     = UDim2.new(pct, 0, 1, 0)
+                        Fill.Size = UDim2.new(pct, 0, 1, 0)
                         Knob.Position = UDim2.new(pct, -7, 0.5, -7)
                     end
-                    if enabled then
-                        callback(enabled, val)
-                    end
+                    callback(enabled, val)
                 end
 
-                ToggleBtn.MouseButton1Click:Connect(function()
-                    enabled = not enabled
-                    tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
-                    tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
-                    updateSliderState()
-                    callback(enabled, val)
-                end)
-
+                -- Обработчики для слайдера
                 VBtn.MouseButton1Click:Connect(function()
                     if not enabled then return end
                     VLbl.Visible = false; VBtn.Visible = false
                     VInput.Visible = true; VInput.Text = tostring(val)
                     VInput:CaptureFocus()
                 end)
+                
                 VInput.FocusLost:Connect(function()
                     if not enabled then
                         VLbl.Visible = true; VBtn.Visible = true; VInput.Visible = false
@@ -1513,14 +1512,16 @@ end
                     if not enabled then return end
                     updateSlider((math.clamp(val + 1, min, max) - min) / (max - min), true)
                 end)
+                
                 ArrDn.MouseButton1Click:Connect(function()
                     if not enabled then return end
                     updateSlider((math.clamp(val - 1, min, max) - min) / (max - min), true)
                 end)
 
+                -- Слайдер
                 local sliding = false
-                local tgPct   = pct
-                local curPct  = pct
+                local tgPct = pct
+                local curPct = pct
 
                 SlideBtn.InputBegan:Connect(function(inp)
                     if not enabled then return end
@@ -1530,6 +1531,7 @@ end
                         tw(Knob, {Size = UDim2.new(0, 18, 0, 18)}, 0.15)
                     end
                 end)
+                
                 UIS.InputEnded:Connect(function(inp)
                     if (inp.UserInputType == Enum.UserInputType.MouseButton1
                     or inp.UserInputType == Enum.UserInputType.Touch) and sliding then
@@ -1540,6 +1542,7 @@ end
                         tw(Knob, {Size = UDim2.new(0, 14, 0, 14)}, 0.2)
                     end
                 end)
+                
                 UIS.InputChanged:Connect(function(inp)
                     if sliding and enabled and (inp.UserInputType == Enum.UserInputType.MouseMovement
                     or inp.UserInputType == Enum.UserInputType.Touch) then
@@ -1547,6 +1550,7 @@ end
                             (inp.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                     end
                 end)
+                
                 RS.RenderStepped:Connect(function()
                     if not sliding then return end
                     if not enabled then
@@ -1556,7 +1560,7 @@ end
                     local d = tgPct - curPct
                     if math.abs(d) > 0.001 then
                         curPct = curPct + d * 0.18
-                        Fill.Size     = UDim2.new(curPct, 0, 1, 0)
+                        Fill.Size = UDim2.new(curPct, 0, 1, 0)
                         Knob.Position = UDim2.new(curPct, -7, 0.5, -7)
                         val = math.floor(min + (max - min) * curPct)
                         VLbl.Text = tostring(val)
@@ -1564,14 +1568,63 @@ end
                     end
                 end)
 
-                updateSliderState()
+                -- Обработчик тоггла с анимацией
+                ToggleBtn.MouseButton1Click:Connect(function()
+                    enabled = not enabled
+                    
+                    -- Анимация тоггла
+                    tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
+                    tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
+                    
+                    -- Анимация появления/скрытия слайдера
+                    if enabled then
+                        SliderContainer.Visible = true
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 0)
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 44)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 88)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        task.wait(0.15)
+                        for _, d in ipairs(SliderContainer:GetDescendants()) do
+                            if d:IsA("TextLabel") or d:IsA("TextButton") then
+                                tw(d, {TextTransparency = 0}, 0.2)
+                            end
+                        end
+                    else
+                        for _, d in ipairs(SliderContainer:GetDescendants()) do
+                            if d:IsA("TextLabel") or d:IsA("TextButton") then
+                                tw(d, {TextTransparency = 1}, 0.15)
+                            end
+                        end
+                        task.wait(0.15)
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 44)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+                        task.wait(0.25)
+                        SliderContainer.Visible = false
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 44)
+                    end
+                    
+                    callback(enabled, val)
+                end)
 
+                -- API для управления
                 local API = {}
                 function API:SetEnabled(state)
+                    if state == enabled then return end
                     enabled = state
                     tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
                     tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
-                    updateSliderState()
+                    
+                    if enabled then
+                        SliderContainer.Visible = true
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 0)
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 44)}, 0.3)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 88)}, 0.3)
+                    else
+                        tw(SliderContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.25)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 44)}, 0.25)
+                        task.wait(0.25)
+                        SliderContainer.Visible = false
+                        SliderContainer.Size = UDim2.new(1, 0, 0, 44)
+                    end
                     callback(enabled, val)
                 end
                 
