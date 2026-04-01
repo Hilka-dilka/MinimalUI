@@ -215,6 +215,6 @@ o
 | **Keybind** | `CreateKeybind(text, defaultKey, cb)` | `(key)` | `:Set(key)` |
 | **ColorPicker** | `CreateColorPicker(text, defaultColor, cb)` | `(color)` | `:Set(color)` |
 
--
+o
 
-© 2026 MinimalUI v2.0 — Minimalist Roblox Lua UI Library
+© 2026 MinimalUI v2.1 — Minimalist Roblox Lua UI Library
