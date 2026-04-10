@@ -795,41 +795,45 @@ end
 
 
 
-            -- ── DROPDOWN ───────────────────────────────────────
+-- ── DROPDOWN ───────────────────────────────────────
 function Section:CreateDropdown(text, options, default, callback)
     callback = callback or function() end
     local selected = default or options[1] or "Select..."
     local isOpen = false
-    addSep("dropdown")
+    addSep("toggle") -- Используем существующий тип сепаратора
 
+    -- Основной контейнер строки
     local F = make("Frame", {
         Size = UDim2.new(1, 0, 0, 36),
         BackgroundTransparency = 1,
         Parent = Items,
-        ZIndex = 99 -- Базовый ZIndex для контейнера
+        ClipsDescendants = false, -- ВАЖНО: разрешаем выход элементов за границы
+        ZIndex = 10 -- Поднимаем чуть выше обычных строк
     })
 
     local Lbl = make("TextLabel", {
         Size = UDim2.new(1, -130, 1, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = M.Text,
+        TextColor3 = M.Text, -- Используем цвет из таблицы темы
         TextSize = 13, Font = M.SubF,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = F,
     })
     table.insert(mText, Lbl)
 
-    -- Основная кнопка дропдауна (справа)
+    -- Кнопка-рамка (куда нажимаем)
     local MainBtn = make("Frame", {
         Size = UDim2.new(0, 110, 0, 24),
         Position = UDim2.new(1, -110, 0.5, -12),
-        BackgroundColor3 = M.Sec, -- Используем вторичный цвет фона темы
+        BackgroundColor3 = M.Main, -- Фон подстраивается под тему (Light/Dark)
         Parent = F,
+        ZIndex = 11
     })
-    corner(MainBtn, UDim.new(0, 6))
+    corner(MainBtn, UDim.new(0, 4))
     mkStroke(MainBtn, M.Border, 1, 0.5)
-    table.insert(mBorder, MainBtn)
+    table.insert(mMain, MainBtn) -- Регистрируем для смены темы фона
+    table.insert(mBorder, MainBtn) -- Регистрируем для смены темы обводки
 
     local SelectedLbl = make("TextLabel", {
         Size = UDim2.new(1, -20, 1, 0),
@@ -840,77 +844,70 @@ function Section:CreateDropdown(text, options, default, callback)
         TextSize = 12, Font = M.Font,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = MainBtn,
+        ZIndex = 12
     })
+    table.insert(mText, SelectedLbl)
 
-    local Arrow = make("TextLabel", {
-        Size = UDim2.new(0, 20, 1, 0),
-        Position = UDim2.new(1, -20, 0, 0),
-        BackgroundTransparency = 1,
-        Text = "▼",
-        TextColor3 = M.Sub,
-        TextSize = 10, Font = M.Font,
-        Parent = MainBtn,
-    })
-
-    -- Контейнер для списка (выдвигается вниз)
+    -- Сам выпадающий список
     local List = make("ScrollingFrame", {
         Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 1, 4),
-        BackgroundColor3 = M.Sec,
+        Position = UDim2.new(0, 0, 1, 2),
+        BackgroundColor3 = M.Main, -- Тот же цвет, что у меню
         BorderSizePixel = 0,
         Visible = false,
         ClipsDescendants = true,
         CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = T.A,
-        ZIndex = 100, -- Всегда выше всех
+        ScrollBarThickness = 0,
+        ZIndex = 100, -- Максимальный приоритет
         Parent = MainBtn,
     })
-    corner(List, UDim.new(0, 6))
+    corner(List, UDim.new(0, 4))
     mkStroke(List, M.Border, 1, 0.8)
+    table.insert(mMain, List) -- Теперь список тоже будет менять цвет при смене темы
 
     local ListLayout = make("UIListLayout", {
         Parent = List,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
+        SortOrder = Enum.SortOrder.LayoutOrder
     })
 
     local function toggleList()
         isOpen = not isOpen
+        -- Чтобы список не перекрывался другими секциями, 
+        -- мы временно поднимаем ZIndex всей строки F при открытии
+        F.ZIndex = isOpen and 50 or 10
+        
         if isOpen then
             List.Visible = true
-            -- Рассчитываем размер (не больше 125px в высоту)
             local targetSize = math.min(#options * 25, 125)
-            tw(List, {Size = UDim2.new(1, 0, 0, targetSize)}, 0.3)
-            tw(Arrow, {Rotation = 180}, 0.3)
+            tw(List, {Size = UDim2.new(1, 0, 0, targetSize)}, 0.25)
         else
-            tw(List, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
-            tw(Arrow, {Rotation = 0}, 0.2)
-            task.delay(0.2, function() if not isOpen then List.Visible = false end end)
+            tw(List, {Size = UDim2.new(1, 0, 0, 0)}, 0.2, function()
+                if not isOpen then List.Visible = false end
+            end)
         end
     end
 
-    -- Невидимая кнопка для клика
     local ClickBtn = make("TextButton", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = "",
         Parent = MainBtn,
+        ZIndex = 13
     })
     ClickBtn.MouseButton1Click:Connect(toggleList)
 
-    -- Создание опций
+    -- Создание элементов списка
     for i, opt in ipairs(options) do
         local OptBtn = make("TextButton", {
             Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1,
-            Text = "  " .. opt,
+            Text = opt,
             TextColor3 = M.Text,
             TextSize = 12, Font = M.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 101,
             Parent = List,
         })
+        table.insert(mText, OptBtn) -- Текст опций теперь тоже меняет цвет
 
         OptBtn.MouseButton1Click:Connect(function()
             selected = opt
@@ -918,21 +915,17 @@ function Section:CreateDropdown(text, options, default, callback)
             callback(opt)
             toggleList()
         end)
-
-        -- Эффект наведения
-        OptBtn.MouseEnter:Connect(function() tw(OptBtn, {BackgroundTransparency = 0.9, BackgroundColor3 = T.A}, 0.1) end)
-        OptBtn.MouseLeave:Connect(function() tw(OptBtn, {BackgroundTransparency = 1}, 0.1) end)
     end
 
-    List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
+    List.CanvasSize = UDim2.new(0, 0, 0, #options * 25)
 
-    local API = {}
-    function API:Set(val)
-        selected = val
-        SelectedLbl.Text = val
-        callback(val)
-    end
-    return API
+    return {
+        Set = function(_, val)
+            selected = val
+            SelectedLbl.Text = val
+            callback(val)
+        end
+    }
 end
 
 
