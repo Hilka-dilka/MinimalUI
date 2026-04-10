@@ -806,7 +806,7 @@ function Section:CreateDropdown(text, options, default, callback)
         Size = UDim2.new(1, 0, 0, 36),
         BackgroundTransparency = 1,
         Parent = Items,
-        ZIndex = 5 -- Базовый ZIndex для контейнера
+        ZIndex = 99 -- Базовый ZIndex для контейнера
     })
 
     local Lbl = make("TextLabel", {
