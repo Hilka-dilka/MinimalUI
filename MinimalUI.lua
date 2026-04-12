@@ -514,35 +514,42 @@ function MinimalUI:CreateWindow(title)
     if switching or curTab == Tab then return end
     switching = true
 
-    -- Плавно убираем активное состояние со ВСЕХ вкладок
+    -- Для ВСЕХ вкладок - плавно убираем активное состояние
     for _, t in ipairs(Window.Tabs) do
         if t.TGrad and t.TGrad.Enabled then
-            -- Плавно отключаем градиент и меняем цвет текста
             t.TGrad.Enabled = false
             t.LblGrad.Enabled = false
-            t.TGrad.Enabled = false
-            tw(t.Lbl, {TextColor3 = M.Sub}, 0.2)
-            -- Плавно убираем фон (прозрачность)
-            tw(t.Btn, {BackgroundTransparency = 1}, 0.2)
+            -- Меняем цвет текста
+            t.Lbl.TextColor3 = M.Sub
+            -- Меняем фон напрямую (без прозрачности, чтобы не было белого)
+            t.Btn.BackgroundColor3 = Color3.new(1, 1, 1)
+            t.Btn.BackgroundTransparency = 1
         end
     end
 
-    -- Анимация для НОВОЙ вкладки (начинаем с прозрачного состояния)
+    -- Настройка новой вкладки (сразу устанавливаем конечные значения)
     TBtn.BackgroundTransparency = 1
+    TBtn.BackgroundColor3 = Color3.new(1, 1, 1)
     TLblBtn.TextColor3 = M.Sub
     TGrad.Enabled = false
     TLblGrad.Enabled = false
     
-    -- Небольшая задержка перед появлением
-    task.wait(0.08)
-    
-    -- Плавно показываем фон новой вкладки
-    tw(TBtn, {BackgroundTransparency = 0}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    -- Небольшая пауза
+    task.wait(0.05)
     
     -- Плавно меняем цвет текста
-    tw(TLblBtn, {TextColor3 = Color3.new(1, 1, 1)}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local textTween = TS:Create(TLblBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        TextColor3 = Color3.new(1, 1, 1)
+    })
+    textTween:Play()
     
-    -- Включаем градиенты с плавностью
+    -- Плавно меняем прозрачность фона
+    local bgTween = TS:Create(TBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0
+    })
+    bgTween:Play()
+    
+    -- Включаем градиенты после начала анимации
     task.wait(0.1)
     TGrad.Enabled = true
     TLblGrad.Enabled = true
@@ -552,10 +559,17 @@ function MinimalUI:CreateWindow(title)
     -- Анимация переключения контента
     if curTab and curTab.Wrapper.Visible then
         local ow = curTab.Wrapper
-        tw(ow, {Position = UDim2.new(0, 0, 0, -8)}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        local contentTween = TS:Create(ow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Position = UDim2.new(0, 0, 0, -8)
+        })
+        contentTween:Play()
+        
         for _, d in ipairs(ow:GetDescendants()) do
             if d:IsA("TextLabel") or d:IsA("TextButton") then
-                tw(d, {TextTransparency = 1}, 0.12)
+                local childTween = TS:Create(d, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                    TextTransparency = 1
+                })
+                childTween:Play()
             end
         end
         task.wait(0.16)
@@ -578,11 +592,17 @@ function MinimalUI:CreateWindow(title)
         end
     end
     
-    tw(Wrapper, {Position = UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local wrapperTween = TS:Create(Wrapper, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0)
+    })
+    wrapperTween:Play()
     
     for _, d in ipairs(Wrapper:GetDescendants()) do
         if d:IsA("TextLabel") or d:IsA("TextButton") then
-            tw(d, {TextTransparency = 0}, 0.3)
+            local childTween = TS:Create(d, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                TextTransparency = 0
+            })
+            childTween:Play()
         end
     end
     
