@@ -112,7 +112,7 @@ local mStroke  = {}
 local toggleReg = {}
 local tabReg    = {}
 local sepReg    = {}
-local dropdownContainers = {} -- для отслеживания открытых дропдаунов
+local dropdownsRegistry = {} -- хранит все данные о дропдаунах для обновления темы
 
 local function bgGrad(parent, rot)
     local g = Instance.new("UIGradient")
@@ -238,7 +238,7 @@ function MinimalUI:CreateWindow(title)
     bgGrads = {}; mMain = {}; mSec = {}; mText = {}
     mSub = {}; mBorder = {}; mStroke = {}
     toggleReg = {}; tabReg = {}; sepReg = {}
-    dropdownContainers = {}
+    dropdownsRegistry = {}
 
     local old = LP.PlayerGui:FindFirstChild("MinimalUI")
     if old then old:Destroy() end
@@ -405,16 +405,28 @@ function MinimalUI:CreateWindow(title)
             end
         end
         
-        -- Обновляем цвета всех открытых дропдаунов
-        for _, container in ipairs(dropdownContainers) do
-            if container and container.Parent then
-                container.BackgroundColor3 = newSec
-                if container.Stroke then
-                    container.Stroke.Color = newBorder
+        -- Обновляем все дропдауны (и открытые, и закрытые)
+        for _, dropdown in ipairs(dropdownsRegistry) do
+            if dropdown.mainBtn then
+                dropdown.mainBtn.BackgroundColor3 = newSec
+                if dropdown.btnStroke then
+                    dropdown.btnStroke.Color = newBorder
                 end
-                -- Обновляем цвет текста в опциях
-                for _, btn in ipairs(container:GetDescendants()) do
-                    if btn:IsA("TextButton") then
+            end
+            if dropdown.selectedLbl then
+                dropdown.selectedLbl.TextColor3 = newText
+            end
+            if dropdown.arrow then
+                dropdown.arrow.TextColor3 = newSub
+            end
+            if dropdown.container then
+                dropdown.container.BackgroundColor3 = newSec
+                if dropdown.containerStroke then
+                    dropdown.containerStroke.Color = newBorder
+                end
+                -- Обновляем цвет текста ВСЕХ опций в списке
+                for _, btn in ipairs(dropdown.optionButtons or {}) do
+                    if btn and btn.Parent then
                         btn.TextColor3 = newText
                     end
                 end
@@ -499,61 +511,78 @@ function MinimalUI:CreateWindow(title)
         })
 
         local function activate()
-            if switching or curTab == Tab then return end
-            switching = true
+    if switching or curTab == Tab then return end
+    switching = true
 
-            for _, t in ipairs(Window.Tabs) do
-                t.Btn.BackgroundTransparency = 1
-                t.TGrad.Enabled   = false
-                t.LblGrad.Enabled = false
-                t.Lbl.TextColor3  = M.Sub
-                for _, te in ipairs(tabReg) do
-                    if te.lbl == t.Lbl then te.isActive = false end
-                end
-            end
-
-            TBtn.BackgroundTransparency = 0
-            TGrad.Enabled    = true
-            TGrad.Color      = ColorSequence.new(T.A, T.A2)
-            TLblGrad.Enabled = true
-            TLblBtn.TextColor3 = Color3.new(1, 1, 1)
-            tabEntry.isActive  = true
-
-            if curTab and curTab.Wrapper.Visible then
-                local ow = curTab.Wrapper
-                tw(ow, {Position = UDim2.new(0, 0, 0, -8)}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-                for _, d in ipairs(ow:GetDescendants()) do
-                    if d:IsA("TextLabel") or d:IsA("TextButton") then
-                        tw(d, {TextTransparency = 1}, 0.12)
-                    end
-                end
-                task.wait(0.16)
-                ow.Visible  = false
-                ow.Position = UDim2.new(0, 0, 0, 0)
-                for _, d in ipairs(ow:GetDescendants()) do
-                    if d:IsA("TextLabel") or d:IsA("TextButton") then
-                        d.TextTransparency = 0
-                    end
-                end
-            end
-
-            Wrapper.Position = UDim2.new(0, 0, 0, 12)
-            Wrapper.Visible  = true
-            for _, d in ipairs(Wrapper:GetDescendants()) do
-                if d:IsA("TextLabel") or d:IsA("TextButton") then
-                    d.TextTransparency = 1
-                end
-            end
-            tw(Wrapper, {Position = UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-            for _, d in ipairs(Wrapper:GetDescendants()) do
-                if d:IsA("TextLabel") or d:IsA("TextButton") then
-                    tw(d, {TextTransparency = 0}, 0.3)
-                end
-            end
-            task.wait(0.3)
-            curTab    = Tab
-            switching = false
+    -- Анимация для ВСЕХ вкладок при переключении
+    for _, t in ipairs(Window.Tabs) do
+        -- Плавно убираем градиент и меняем цвет текста
+        if t.TGrad and t.TGrad.Enabled then
+            t.TGrad.Enabled = false
+            t.LblGrad.Enabled = false
+            tw(t.Lbl, {TextColor3 = M.Sub}, 0.2)
+            tw(t.Btn, {BackgroundTransparency = 1}, 0.2)
         end
+    end
+
+    -- Анимация для НОВОЙ вкладки
+    TBtn.BackgroundTransparency = 1
+    TLblBtn.TextColor3 = M.Sub
+    
+    -- Задержка перед появлением (создаёт эффект переключения)
+    task.wait(0.05)
+    
+    -- Плавно показываем новую вкладку
+    tw(TBtn, {BackgroundTransparency = 0}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    
+    task.wait(0.05)
+    
+    TGrad.Enabled = true
+    TLblGrad.Enabled = true
+    tw(TLblBtn, {TextColor3 = Color3.new(1, 1, 1)}, 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    
+    tabEntry.isActive = true
+
+    -- Анимация переключения контента
+    if curTab and curTab.Wrapper.Visible then
+        local ow = curTab.Wrapper
+        tw(ow, {Position = UDim2.new(0, 0, 0, -8)}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        for _, d in ipairs(ow:GetDescendants()) do
+            if d:IsA("TextLabel") or d:IsA("TextButton") then
+                tw(d, {TextTransparency = 1}, 0.12)
+            end
+        end
+        task.wait(0.16)
+        ow.Visible = false
+        ow.Position = UDim2.new(0, 0, 0, 0)
+        for _, d in ipairs(ow:GetDescendants()) do
+            if d:IsA("TextLabel") or d:IsA("TextButton") then
+                d.TextTransparency = 0
+            end
+        end
+    end
+
+    Wrapper.Position = UDim2.new(0, 0, 0, 12)
+    Wrapper.Visible = true
+    
+    for _, d in ipairs(Wrapper:GetDescendants()) do
+        if d:IsA("TextLabel") or d:IsA("TextButton") then
+            d.TextTransparency = 1
+        end
+    end
+    
+    tw(Wrapper, {Position = UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    
+    for _, d in ipairs(Wrapper:GetDescendants()) do
+        if d:IsA("TextLabel") or d:IsA("TextButton") then
+            tw(d, {TextTransparency = 0}, 0.3)
+        end
+    end
+    
+    task.wait(0.3)
+    curTab = Tab
+    switching = false
+end
 
         TBtn.MouseButton1Click:Connect(activate)
 
@@ -805,6 +834,7 @@ function MinimalUI:CreateWindow(title)
                 callback = callback or function() end
                 local selected = default or options[1] or "Select..."
                 local isOpen = false
+                local optionButtons = {} -- храним кнопки опций для обновления темы
                 addSep("dropdown")
 
                 local F = make("Frame", {
@@ -867,9 +897,6 @@ function MinimalUI:CreateWindow(title)
                 })
                 corner(DropdownContainer, UDim.new(0, 6))
                 local containerStroke = mkStroke(DropdownContainer, M.Border, 1, 0.8)
-                
-                -- Добавляем контейнер в реестр для обновления цветов при смене темы
-                table.insert(dropdownContainers, DropdownContainer)
 
                 local List = make("ScrollingFrame", {
                     Size = UDim2.new(1, 0, 1, 0),
@@ -914,7 +941,6 @@ function MinimalUI:CreateWindow(title)
                         updateDropdownPosition()
                         DropdownContainer.Visible = true
                         local targetSize = math.min(#options * 25, 125)
-                        -- Сначала показываем контейнер, потом анимируем размер
                         DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
                         tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                         tw(Arrow, {Rotation = 180}, 0.3)
@@ -955,6 +981,7 @@ function MinimalUI:CreateWindow(title)
                         ZIndex = 1002,
                         Parent = List,
                     })
+                    table.insert(optionButtons, OptBtn)
 
                     OptBtn.MouseButton1Click:Connect(function()
                         selected = opt
@@ -973,6 +1000,18 @@ function MinimalUI:CreateWindow(title)
                 end
 
                 List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
+
+                -- Регистрируем дропдаун для обновления темы
+                local dropdownData = {
+                    mainBtn = MainBtn,
+                    btnStroke = btnStroke,
+                    selectedLbl = SelectedLbl,
+                    arrow = Arrow,
+                    container = DropdownContainer,
+                    containerStroke = containerStroke,
+                    optionButtons = optionButtons
+                }
+                table.insert(dropdownsRegistry, dropdownData)
 
                 -- Закрытие при клике вне области
                 local function onGlobalClick(input, gameProcessed)
