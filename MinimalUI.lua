@@ -443,7 +443,7 @@ function MinimalUI:CreateWindow(title)
 
         local TBtn = make("TextButton", {
             Size = UDim2.new(1, 0, 0, 32),
-            BackgroundColor3 = M.Sec,
+            BackgroundColor3 = Color3.new(1, 1, 1),
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -514,26 +514,31 @@ function MinimalUI:CreateWindow(title)
     if switching or curTab == Tab then return end
     switching = true
 
-    -- Для ВСЕХ вкладок - плавно убираем активное состояние
+    -- Плавно убираем активное состояние со всех вкладок
     for _, t in ipairs(Window.Tabs) do
         if t.TGrad and t.TGrad.Enabled then
             t.TGrad.Enabled = false
             t.LblGrad.Enabled = false
-            -- Меняем цвет текста
-            t.Lbl.TextColor3 = M.Sub
-            -- Убираем фон (делаем полностью прозрачным)
-            t.Btn.BackgroundTransparency = 1
+            -- Плавно меняем цвет текста
+            local textTween = TS:Create(t.Lbl, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                TextColor3 = M.Sub
+            })
+            textTween:Play()
+            -- Плавно убираем фон
+            local bgTween = TS:Create(t.Btn, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
+            })
+            bgTween:Play()
         end
     end
 
-    -- Настройка новой вкладки (сразу устанавливаем конечные значения)
+    -- Настройка новой вкладки
     TBtn.BackgroundTransparency = 1
     TLblBtn.TextColor3 = M.Sub
     TGrad.Enabled = false
     TLblGrad.Enabled = false
     
-    -- Небольшая пауза
-    task.wait(0.05)
+    task.wait(0.08)
     
     -- Плавно меняем цвет текста
     local textTween = TS:Create(TLblBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
@@ -541,14 +546,13 @@ function MinimalUI:CreateWindow(title)
     })
     textTween:Play()
     
-    -- Плавно делаем фон видимым (от прозрачного к непрозрачному)
+    -- Плавно показываем фон
     local bgTween = TS:Create(TBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         BackgroundTransparency = 0
     })
     bgTween:Play()
     
-    -- Включаем градиенты через небольшую задержку
-    task.wait(0.12)
+    task.wait(0.1)
     TGrad.Enabled = true
     TLblGrad.Enabled = true
     
