@@ -307,9 +307,9 @@ function MinimalUI:CreateWindow(title)
         corner(d, UDim.new(1, 0))
         return d
     end
-    local DotC = dot(Color3.fromRGB(255, 95,  87),  1)
-    local DotM = dot(Color3.fromRGB(255, 189, 46),  2)
-    local DotX = dot(Color3.fromRGB(40,  200, 64),  3)
+    local DotC = dot(Color3.fromRGB(255, 95,  87), 1)
+    local DotM = dot(Color3.fromRGB(255, 189, 46), 2)
+    local DotX = dot(Color3.fromRGB(40,  200, 64), 3)
 
     DotC.MouseButton1Click:Connect(function()
         tw(Main, {Size = UDim2.new(0, 580, 0, 0)}, 0.3)
@@ -561,7 +561,6 @@ function MinimalUI:CreateWindow(title)
         function Tab:CreateSection(secName)
             local Section  = {}
             local elemCount = 0
-            local lastElementType = nil
 
             local SFrame = make("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
@@ -690,41 +689,32 @@ function MinimalUI:CreateWindow(title)
                 collapsing = false
             end)
 
-
-
-local function addSep(currentElementType)
-    elemCount = elemCount + 1
-    if elemCount > 1 then
-        -- Стандартные отступы для всех элементов
-        local topMargin = 4    -- отступ ОТ предыдущего элемента ДО верхнего разделителя
-        local bottomMargin = 4 -- отступ ОТ текущего элемента ДО нижнего разделителя
-        
-        -- ЕСЛИ ЭТО СЛАЙДЕР - настраиваем его личные отступы
-        if currentElementType == "slider" then
-            topMargin = 4     -- отступ ОТ предыдущего элемента ДО верхнего разделителя
-            bottomMargin = 10  -- отступ ОТ слайдера ДО нижнего разделителя
-        end
-        
-        -- Отступ ОТ предыдущего элемента ДО верхнего разделителя
-        local spacingTop = make("Frame", {
-            Size = UDim2.new(1, 0, 0, topMargin),
-            BackgroundTransparency = 1,
-            Parent = Items,
-        })
-        
-        -- Верхний разделитель
-        mkSep(Items)
-        
-        -- ЗДЕСЬ БУДЕТ СОЗДАВАТЬСЯ САМ ЭЛЕМЕНТ
-        
-        -- Отступ ОТ элемента ДО нижнего разделителя
-        local spacingBottom = make("Frame", {
-            Size = UDim2.new(1, 0, 0, bottomMargin),
-            BackgroundTransparency = 1,
-            Parent = Items,
-        })
-    end
-end
+            local function addSep(elementType)
+                elemCount = elemCount + 1
+                if elemCount > 1 then
+                    local topMargin = 4
+                    local bottomMargin = 4
+                    
+                    if elementType == "slider" then
+                        topMargin = 4
+                        bottomMargin = 10
+                    end
+                    
+                    local spacingTop = make("Frame", {
+                        Size = UDim2.new(1, 0, 0, topMargin),
+                        BackgroundTransparency = 1,
+                        Parent = Items,
+                    })
+                    
+                    mkSep(Items)
+                    
+                    local spacingBottom = make("Frame", {
+                        Size = UDim2.new(1, 0, 0, bottomMargin),
+                        BackgroundTransparency = 1,
+                        Parent = Items,
+                    })
+                end
+            end
 
             -- ── TOGGLE ───────────────────────────────────────
             function Section:CreateToggle(text, default, callback)
@@ -792,152 +782,214 @@ end
                 return API
             end
 
+            -- ── DROPDOWN (ИСПРАВЛЕННЫЙ) ───────────────────────
+            function Section:CreateDropdown(text, options, default, callback)
+                callback = callback or function() end
+                local selected = default or options[1] or "Select..."
+                local isOpen = false
+                addSep("dropdown")
 
+                local F = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 36),
+                    BackgroundTransparency = 1,
+                    Parent = Items,
+                })
 
+                local Lbl = make("TextLabel", {
+                    Size = UDim2.new(1, -130, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = text,
+                    TextColor3 = M.Text,
+                    TextSize = 13, Font = M.SubF,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = F,
+                })
+                table.insert(mText, Lbl)
 
--- ── DROPDOWN ───────────────────────────────────────
-function Section:CreateDropdown(text, options, default, callback)
-    callback = callback or function() end
-    local selected = default or options[1] or "Select..."
-    local isOpen = false
-    addSep("dropdown")
+                -- Основная кнопка дропдауна (справа)
+                local MainBtn = make("Frame", {
+                    Size = UDim2.new(0, 110, 0, 24),
+                    Position = UDim2.new(1, -110, 0.5, -12),
+                    BackgroundColor3 = M.Sec,
+                    Parent = F,
+                })
+                corner(MainBtn, UDim.new(0, 6))
+                mkStroke(MainBtn, M.Border, 1, 0.5)
 
-    local F = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundTransparency = 1,
-        Parent = Items,
-        ZIndex = 5 -- Базовый ZIndex для контейнера
-    })
+                local SelectedLbl = make("TextLabel", {
+                    Size = UDim2.new(1, -20, 1, 0),
+                    Position = UDim2.new(0, 8, 0, 0),
+                    BackgroundTransparency = 1,
+                    Text = selected,
+                    TextColor3 = M.Text,
+                    TextSize = 12, Font = M.Font,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = MainBtn,
+                })
 
-    local Lbl = make("TextLabel", {
-        Size = UDim2.new(1, -130, 1, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextColor3 = M.Text,
-        TextSize = 13, Font = M.SubF,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = F,
-    })
-    table.insert(mText, Lbl)
+                local Arrow = make("TextLabel", {
+                    Size = UDim2.new(0, 20, 1, 0),
+                    Position = UDim2.new(1, -20, 0, 0),
+                    BackgroundTransparency = 1,
+                    Text = "▼",
+                    TextColor3 = M.Sub,
+                    TextSize = 10, Font = M.Font,
+                    Parent = MainBtn,
+                })
 
-    -- Основная кнопка дропдауна (справа)
-    local MainBtn = make("Frame", {
-        Size = UDim2.new(0, 110, 0, 24),
-        Position = UDim2.new(1, -110, 0.5, -12),
-        BackgroundColor3 = M.Sec, -- Используем вторичный цвет фона темы
-        Parent = F,
-    })
-    corner(MainBtn, UDim.new(0, 6))
-    mkStroke(MainBtn, M.Border, 1, 0.5)
-    table.insert(mBorder, MainBtn)
+                -- Контейнер для списка (помещаем НАД всем, используя GUI напрямую)
+                local DropdownContainer = make("Frame", {
+                    Size = UDim2.new(0, 110, 0, 0),
+                    BackgroundColor3 = M.Sec,
+                    BorderSizePixel = 0,
+                    Visible = false,
+                    ClipsDescendants = true,
+                    ZIndex = 1000,
+                    Parent = GUI, -- Родитель - ScreenGui, чтобы быть поверх всего
+                })
+                corner(DropdownContainer, UDim.new(0, 6))
+                mkStroke(DropdownContainer, M.Border, 1, 0.8)
 
-    local SelectedLbl = make("TextLabel", {
-        Size = UDim2.new(1, -20, 1, 0),
-        Position = UDim2.new(0, 8, 0, 0),
-        BackgroundTransparency = 1,
-        Text = selected,
-        TextColor3 = M.Text,
-        TextSize = 12, Font = M.Font,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = MainBtn,
-    })
+                local List = make("ScrollingFrame", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    CanvasSize = UDim2.new(0, 0, 0, 0),
+                    ScrollBarThickness = 2,
+                    ScrollBarImageColor3 = T.A,
+                    ZIndex = 1001,
+                    Parent = DropdownContainer,
+                })
 
-    local Arrow = make("TextLabel", {
-        Size = UDim2.new(0, 20, 1, 0),
-        Position = UDim2.new(1, -20, 0, 0),
-        BackgroundTransparency = 1,
-        Text = "▼",
-        TextColor3 = M.Sub,
-        TextSize = 10, Font = M.Font,
-        Parent = MainBtn,
-    })
+                local ListLayout = make("UIListLayout", {
+                    Parent = List,
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Padding = UDim.new(0, 2)
+                })
 
-    -- Контейнер для списка (выдвигается вниз)
-    local List = make("ScrollingFrame", {
-        Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 1, 4),
-        BackgroundColor3 = M.Sec,
-        BorderSizePixel = 0,
-        Visible = false,
-        ClipsDescendants = true,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = T.A,
-        ZIndex = 100, -- Всегда выше всех
-        Parent = MainBtn,
-    })
-    corner(List, UDim.new(0, 6))
-    mkStroke(List, M.Border, 1, 0.8)
+                -- Функция обновления позиции дропдауна
+                local function updateDropdownPosition()
+                    local absPos = MainBtn.AbsolutePosition
+                    local absSize = MainBtn.AbsoluteSize
+                    local targetSize = math.min(#options * 25, 125)
+                    
+                    DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+                    DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
+                    
+                    if isOpen then
+                        DropdownContainer.Size = UDim2.new(0, 110, 0, targetSize)
+                    end
+                    
+                    List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
+                end
 
-    local ListLayout = make("UIListLayout", {
-        Parent = List,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 2)
-    })
+                -- Функция открытия/закрытия списка
+                local function toggleList()
+                    isOpen = not isOpen
+                    if isOpen then
+                        updateDropdownPosition()
+                        DropdownContainer.Visible = true
+                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, math.min(#options * 25, 125))}, 0.3)
+                        tw(Arrow, {Rotation = 180}, 0.3)
+                    else
+                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.2)
+                        tw(Arrow, {Rotation = 0}, 0.2)
+                        task.delay(0.2, function() 
+                            if not isOpen then 
+                                DropdownContainer.Visible = false 
+                            end 
+                        end)
+                    end
+                end
 
-    local function toggleList()
-        isOpen = not isOpen
-        if isOpen then
-            List.Visible = true
-            -- Рассчитываем размер (не больше 125px в высоту)
-            local targetSize = math.min(#options * 25, 125)
-            tw(List, {Size = UDim2.new(1, 0, 0, targetSize)}, 0.3)
-            tw(Arrow, {Rotation = 180}, 0.3)
-        else
-            tw(List, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
-            tw(Arrow, {Rotation = 0}, 0.2)
-            task.delay(0.2, function() if not isOpen then List.Visible = false end end)
-        end
-    end
+                -- Обновляем позицию при скролле или изменении размера окна
+                local function onViewportChanged()
+                    if isOpen and DropdownContainer.Visible then
+                        updateDropdownPosition()
+                    end
+                end
 
-    -- Невидимая кнопка для клика
-    local ClickBtn = make("TextButton", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "",
-        Parent = MainBtn,
-    })
-    ClickBtn.MouseButton1Click:Connect(toggleList)
+                -- Отслеживаем изменения позиции
+                RS.RenderStepped:Connect(onViewportChanged)
+                
+                -- Также отслеживаем скролл в ScrollingFrame
+                if Scroll then
+                    Scroll:GetPropertyChangedSignal("CanvasPosition"):Connect(onViewportChanged)
+                end
 
-    -- Создание опций
-    for i, opt in ipairs(options) do
-        local OptBtn = make("TextButton", {
-            Size = UDim2.new(1, 0, 0, 25),
-            BackgroundTransparency = 1,
-            Text = "  " .. opt,
-            TextColor3 = M.Text,
-            TextSize = 12, Font = M.Font,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 101,
-            Parent = List,
-        })
+                -- Невидимая кнопка для клика
+                local ClickBtn = make("TextButton", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    Parent = MainBtn,
+                })
+                ClickBtn.MouseButton1Click:Connect(toggleList)
 
-        OptBtn.MouseButton1Click:Connect(function()
-            selected = opt
-            SelectedLbl.Text = opt
-            callback(opt)
-            toggleList()
-        end)
+                -- Создание опций
+                for i, opt in ipairs(options) do
+                    local OptBtn = make("TextButton", {
+                        Size = UDim2.new(1, 0, 0, 25),
+                        BackgroundTransparency = 1,
+                        Text = "  " .. opt,
+                        TextColor3 = M.Text,
+                        TextSize = 12, Font = M.Font,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        ZIndex = 1002,
+                        Parent = List,
+                    })
 
-        -- Эффект наведения
-        OptBtn.MouseEnter:Connect(function() tw(OptBtn, {BackgroundTransparency = 0.9, BackgroundColor3 = T.A}, 0.1) end)
-        OptBtn.MouseLeave:Connect(function() tw(OptBtn, {BackgroundTransparency = 1}, 0.1) end)
-    end
+                    OptBtn.MouseButton1Click:Connect(function()
+                        selected = opt
+                        SelectedLbl.Text = opt
+                        callback(opt)
+                        toggleList()
+                    end)
 
-    List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
+                    -- Эффект наведения
+                    OptBtn.MouseEnter:Connect(function() 
+                        tw(OptBtn, {BackgroundTransparency = 0.9, BackgroundColor3 = T.A}, 0.1) 
+                    end)
+                    OptBtn.MouseLeave:Connect(function() 
+                        tw(OptBtn, {BackgroundTransparency = 1}, 0.1) 
+                    end)
+                end
 
-    local API = {}
-    function API:Set(val)
-        selected = val
-        SelectedLbl.Text = val
-        callback(val)
-    end
-    return API
-end
+                List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
 
+                -- Закрытие при клике вне области
+                local function onGlobalClick(input)
+                    if isOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local mousePos = input.Position
+                        local btnRect = MainBtn.AbsolutePosition
+                        local btnSize = MainBtn.AbsoluteSize
+                        local dropRect = DropdownContainer.AbsolutePosition
+                        local dropSize = DropdownContainer.AbsoluteSize
+                        
+                        local clickedOnButton = mousePos.X >= btnRect.X and mousePos.X <= btnRect.X + btnSize.X and
+                                                mousePos.Y >= btnRect.Y and mousePos.Y <= btnRect.Y + btnSize.Y
+                        
+                        local clickedOnDropdown = DropdownContainer.Visible and 
+                                                  mousePos.X >= dropRect.X and mousePos.X <= dropRect.X + dropSize.X and
+                                                  mousePos.Y >= dropRect.Y and mousePos.Y <= dropRect.Y + dropSize.Y
+                        
+                        if not clickedOnButton and not clickedOnDropdown then
+                            toggleList()
+                        end
+                    end
+                end
+                
+                UIS.InputBegan:Connect(onGlobalClick)
 
+                local API = {}
+                function API:Set(val)
+                    selected = val
+                    SelectedLbl.Text = val
+                    callback(val)
+                end
+                return API
+            end
 
-            
             -- ── SLIDER ───────────────────────────────────────
             function Section:CreateSlider(text, min, max, default, callback)
                 callback = callback or function() end
@@ -951,27 +1003,24 @@ end
                     Parent = Items,
                 })
 
-                -- Название слева
                 local Lbl = make("TextLabel", {
-    Size = UDim2.new(0.35, 0, 1, 0),  -- было 0.4, стало 0.35
-    BackgroundTransparency = 1,
-    Text = text,
-    TextColor3 = M.Text,
-    TextSize = 13, Font = M.SubF,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    Parent = F,
-})
+                    Size = UDim2.new(0.35, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = text,
+                    TextColor3 = M.Text,
+                    TextSize = 13, Font = M.SubF,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = F,
+                })
                 table.insert(mText, Lbl)
 
-                -- Контейнер для слайдера и текстбокса (как SliderRow в ToggleSlider)
                 local SliderRow = make("Frame", {
-    Size = UDim2.new(0.65, 0, 0, 20),  -- было 0.6, стало 0.65
-    Position = UDim2.new(0.35, 0, 0.5, -10),  -- было 0.4, стало 0.35
-    BackgroundTransparency = 1,
-    Parent = F,
-})
+                    Size = UDim2.new(0.65, 0, 0, 20),
+                    Position = UDim2.new(0.35, 0, 0.5, -10),
+                    BackgroundTransparency = 1,
+                    Parent = F,
+                })
 
-                -- Трек слайдера
                 local Track = make("Frame", {
                     Size = UDim2.new(1, -20, 0, 5),
                     Position = UDim2.new(0, -60, 0.5, -2.5),
@@ -998,7 +1047,6 @@ end
                 })
                 corner(Knob, UDim.new(1, 0))
 
-                -- Текстбокс справа от слайдера
                 local VBG = make("Frame", {
                     Size = UDim2.new(0, 56, 0, 20),
                     Position = UDim2.new(1, -72, 0.5, -10),
@@ -1043,7 +1091,6 @@ end
                     Parent = VBG,
                 })
 
-                -- Стрелки как в ToggleSlider
                 local ArrUpLbl = make("TextLabel", {
                     Size = UDim2.new(0, 14, 0.5, -1),
                     Position = UDim2.new(1, -14, 0, 0),
@@ -1324,7 +1371,6 @@ end
                     Parent = RBG,
                 })
 
-                -- set initial inactive side
                 if active == "left" then
                     RBG.BackgroundColor3 = M.Sec
                     RLbl.TextColor3      = M.Sub
@@ -1340,19 +1386,16 @@ end
                 local function setActive(side)
                     active = side
                     if side == "left" then
-                        -- activate left
                         LGrad.Enabled    = true
                         LLblGrad.Enabled = true
                         LBG.BackgroundColor3 = Color3.new(1, 1, 1)
                         LLbl.TextColor3      = Color3.new(1, 1, 1)
-                        -- remove RBG from mSec if present
                         for i, o in ipairs(mSec) do
                             if o == RBG then table.remove(mSec, i); break end
                         end
                         for i, o in ipairs(mSub) do
                             if o == RLbl then table.remove(mSub, i); break end
                         end
-                        -- deactivate right
                         RGrad.Enabled    = false
                         RLblGrad.Enabled = false
                         tw(RBG,  {BackgroundColor3 = M.Sec}, 0.25)
@@ -1360,19 +1403,16 @@ end
                         table.insert(mSec, RBG)
                         table.insert(mSub, RLbl)
                     else
-                        -- activate right
                         RGrad.Enabled    = true
                         RLblGrad.Enabled = true
                         RBG.BackgroundColor3 = Color3.new(1, 1, 1)
                         RLbl.TextColor3      = Color3.new(1, 1, 1)
-                        -- remove LBG from mSec if present
                         for i, o in ipairs(mSec) do
                             if o == LBG then table.remove(mSec, i); break end
                         end
                         for i, o in ipairs(mSub) do
                             if o == LLbl then table.remove(mSub, i); break end
                         end
-                        -- deactivate left
                         LGrad.Enabled    = false
                         LLblGrad.Enabled = false
                         tw(LBG,  {BackgroundColor3 = M.Sec}, 0.25)
