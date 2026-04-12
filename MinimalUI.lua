@@ -510,108 +510,62 @@ function MinimalUI:CreateWindow(title)
             Parent = Scroll,
         })
 
-    local function activate()
-    if switching or curTab == Tab then return end
-    switching = true
+        local function activate()
+            if switching or curTab == Tab then return end
+            switching = true
 
-    -- Плавно убираем активное состояние со всех вкладок
-    for _, t in ipairs(Window.Tabs) do
-        if t.TGrad and t.TGrad.Enabled then
-            t.TGrad.Enabled = false
-            t.LblGrad.Enabled = false
-            -- Плавно меняем цвет текста
-            local textTween = TS:Create(t.Lbl, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                TextColor3 = M.Sub
-            })
-            textTween:Play()
-            -- Плавно убираем фон
-            local bgTween = TS:Create(t.Btn, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 1
-            })
-            bgTween:Play()
-        end
-    end
-
-    -- Настройка новой вкладки
-    TBtn.BackgroundTransparency = 1
-    TLblBtn.TextColor3 = M.Sub
-    TGrad.Enabled = false
-    TLblGrad.Enabled = false
-    
-    task.wait(0.08)
-    
-    -- Плавно меняем цвет текста
-    local textTween = TS:Create(TLblBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        TextColor3 = Color3.new(1, 1, 1)
-    })
-    textTween:Play()
-    
-    -- Плавно показываем фон
-    local bgTween = TS:Create(TBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0
-    })
-    bgTween:Play()
-    
-    task.wait(0.1)
-    TGrad.Enabled = true
-    TLblGrad.Enabled = true
-    
-    tabEntry.isActive = true
-
-    -- Анимация переключения контента
-    if curTab and curTab.Wrapper.Visible then
-        local ow = curTab.Wrapper
-        local contentTween = TS:Create(ow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(0, 0, 0, -8)
-        })
-        contentTween:Play()
-        
-        for _, d in ipairs(ow:GetDescendants()) do
-            if d:IsA("TextLabel") or d:IsA("TextButton") then
-                local childTween = TS:Create(d, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                    TextTransparency = 1
-                })
-                childTween:Play()
+            for _, t in ipairs(Window.Tabs) do
+                t.Btn.BackgroundTransparency = 1
+                t.TGrad.Enabled   = false
+                t.LblGrad.Enabled = false
+                t.Lbl.TextColor3  = M.Sub
+                for _, te in ipairs(tabReg) do
+                    if te.lbl == t.Lbl then te.isActive = false end
+                end
             end
-        end
-        task.wait(0.16)
-        ow.Visible = false
-        ow.Position = UDim2.new(0, 0, 0, 0)
-        for _, d in ipairs(ow:GetDescendants()) do
-            if d:IsA("TextLabel") or d:IsA("TextButton") then
-                d.TextTransparency = 0
-            end
-        end
-    end
 
-    -- Анимация появления нового контента
-    Wrapper.Position = UDim2.new(0, 0, 0, 12)
-    Wrapper.Visible = true
-    
-    for _, d in ipairs(Wrapper:GetDescendants()) do
-        if d:IsA("TextLabel") or d:IsA("TextButton") then
-            d.TextTransparency = 1
+            TBtn.BackgroundTransparency = 0
+            TGrad.Enabled    = true
+            TGrad.Color      = ColorSequence.new(T.A, T.A2)
+            TLblGrad.Enabled = true
+            TLblBtn.TextColor3 = Color3.new(1, 1, 1)
+            tabEntry.isActive  = true
+
+            if curTab and curTab.Wrapper.Visible then
+                local ow = curTab.Wrapper
+                tw(ow, {Position = UDim2.new(0, 0, 0, -8)}, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+                for _, d in ipairs(ow:GetDescendants()) do
+                    if d:IsA("TextLabel") or d:IsA("TextButton") then
+                        tw(d, {TextTransparency = 1}, 0.12)
+                    end
+                end
+                task.wait(0.16)
+                ow.Visible  = false
+                ow.Position = UDim2.new(0, 0, 0, 0)
+                for _, d in ipairs(ow:GetDescendants()) do
+                    if d:IsA("TextLabel") or d:IsA("TextButton") then
+                        d.TextTransparency = 0
+                    end
+                end
+            end
+
+            Wrapper.Position = UDim2.new(0, 0, 0, 12)
+            Wrapper.Visible  = true
+            for _, d in ipairs(Wrapper:GetDescendants()) do
+                if d:IsA("TextLabel") or d:IsA("TextButton") then
+                    d.TextTransparency = 1
+                end
+            end
+            tw(Wrapper, {Position = UDim2.new(0, 0, 0, 0)}, 0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+            for _, d in ipairs(Wrapper:GetDescendants()) do
+                if d:IsA("TextLabel") or d:IsA("TextButton") then
+                    tw(d, {TextTransparency = 0}, 0.3)
+                end
+            end
+            task.wait(0.3)
+            curTab    = Tab
+            switching = false
         end
-    end
-    
-    local wrapperTween = TS:Create(Wrapper, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0, 0, 0, 0)
-    })
-    wrapperTween:Play()
-    
-    for _, d in ipairs(Wrapper:GetDescendants()) do
-        if d:IsA("TextLabel") or d:IsA("TextButton") then
-            local childTween = TS:Create(d, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                TextTransparency = 0
-            })
-            childTween:Play()
-        end
-    end
-    
-    task.wait(0.3)
-    curTab = Tab
-    switching = false
-end
 
         TBtn.MouseButton1Click:Connect(activate)
 
