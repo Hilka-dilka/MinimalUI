@@ -443,7 +443,7 @@ function MinimalUI:CreateWindow(title)
 
         local TBtn = make("TextButton", {
             Size = UDim2.new(1, 0, 0, 32),
-            BackgroundColor3 = Color3.new(1, 1, 1),
+            BackgroundColor3 = M.Sec,
             BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
@@ -521,15 +521,13 @@ function MinimalUI:CreateWindow(title)
             t.LblGrad.Enabled = false
             -- Меняем цвет текста
             t.Lbl.TextColor3 = M.Sub
-            -- Меняем фон напрямую (без прозрачности, чтобы не было белого)
-            t.Btn.BackgroundColor3 = Color3.new(1, 1, 1)
+            -- Убираем фон (делаем полностью прозрачным)
             t.Btn.BackgroundTransparency = 1
         end
     end
 
     -- Настройка новой вкладки (сразу устанавливаем конечные значения)
     TBtn.BackgroundTransparency = 1
-    TBtn.BackgroundColor3 = Color3.new(1, 1, 1)
     TLblBtn.TextColor3 = M.Sub
     TGrad.Enabled = false
     TLblGrad.Enabled = false
@@ -543,14 +541,14 @@ function MinimalUI:CreateWindow(title)
     })
     textTween:Play()
     
-    -- Плавно меняем прозрачность фона
+    -- Плавно делаем фон видимым (от прозрачного к непрозрачному)
     local bgTween = TS:Create(TBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         BackgroundTransparency = 0
     })
     bgTween:Play()
     
-    -- Включаем градиенты после начала анимации
-    task.wait(0.1)
+    -- Включаем градиенты через небольшую задержку
+    task.wait(0.12)
     TGrad.Enabled = true
     TLblGrad.Enabled = true
     
