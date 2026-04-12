@@ -510,36 +510,42 @@ function MinimalUI:CreateWindow(title)
             Parent = Scroll,
         })
 
-        local function activate()
+    local function activate()
     if switching or curTab == Tab then return end
     switching = true
 
-    -- Анимация для ВСЕХ вкладок при переключении
+    -- Плавно убираем активное состояние со ВСЕХ вкладок
     for _, t in ipairs(Window.Tabs) do
-        -- Плавно убираем градиент и меняем цвет текста
         if t.TGrad and t.TGrad.Enabled then
+            -- Плавно отключаем градиент и меняем цвет текста
             t.TGrad.Enabled = false
             t.LblGrad.Enabled = false
+            t.TGrad.Enabled = false
             tw(t.Lbl, {TextColor3 = M.Sub}, 0.2)
+            -- Плавно убираем фон (прозрачность)
             tw(t.Btn, {BackgroundTransparency = 1}, 0.2)
         end
     end
 
-    -- Анимация для НОВОЙ вкладки
+    -- Анимация для НОВОЙ вкладки (начинаем с прозрачного состояния)
     TBtn.BackgroundTransparency = 1
     TLblBtn.TextColor3 = M.Sub
+    TGrad.Enabled = false
+    TLblGrad.Enabled = false
     
-    -- Задержка перед появлением (создаёт эффект переключения)
-    task.wait(0.05)
+    -- Небольшая задержка перед появлением
+    task.wait(0.08)
     
-    -- Плавно показываем новую вкладку
+    -- Плавно показываем фон новой вкладки
     tw(TBtn, {BackgroundTransparency = 0}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     
-    task.wait(0.05)
+    -- Плавно меняем цвет текста
+    tw(TLblBtn, {TextColor3 = Color3.new(1, 1, 1)}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     
+    -- Включаем градиенты с плавностью
+    task.wait(0.1)
     TGrad.Enabled = true
     TLblGrad.Enabled = true
-    tw(TLblBtn, {TextColor3 = Color3.new(1, 1, 1)}, 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     
     tabEntry.isActive = true
 
@@ -562,6 +568,7 @@ function MinimalUI:CreateWindow(title)
         end
     end
 
+    -- Анимация появления нового контента
     Wrapper.Position = UDim2.new(0, 0, 0, 12)
     Wrapper.Visible = true
     
