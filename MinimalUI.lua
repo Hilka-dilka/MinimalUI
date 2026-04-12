@@ -112,6 +112,7 @@ local mStroke  = {}
 local toggleReg = {}
 local tabReg    = {}
 local sepReg    = {}
+local dropdownContainers = {} -- для отслеживания открытых дропдаунов
 
 local function bgGrad(parent, rot)
     local g = Instance.new("UIGradient")
@@ -237,6 +238,7 @@ function MinimalUI:CreateWindow(title)
     bgGrads = {}; mMain = {}; mSec = {}; mText = {}
     mSub = {}; mBorder = {}; mStroke = {}
     toggleReg = {}; tabReg = {}; sepReg = {}
+    dropdownContainers = {}
 
     local old = LP.PlayerGui:FindFirstChild("MinimalUI")
     if old then old:Destroy() end
@@ -400,6 +402,22 @@ function MinimalUI:CreateWindow(title)
         for _, t in ipairs(toggleReg) do
             if t.bg and t.bg.Parent and not t.stateRef.v then
                 tw(t.bg, {BackgroundColor3 = newBorder}, 0.35)
+            end
+        end
+        
+        -- Обновляем цвета всех открытых дропдаунов
+        for _, container in ipairs(dropdownContainers) do
+            if container and container.Parent then
+                container.BackgroundColor3 = newSec
+                if container.Stroke then
+                    container.Stroke.Color = newBorder
+                end
+                -- Обновляем цвет текста в опциях
+                for _, btn in ipairs(container:GetDescendants()) do
+                    if btn:IsA("TextButton") then
+                        btn.TextColor3 = newText
+                    end
+                end
             end
         end
     end
@@ -814,7 +832,7 @@ function MinimalUI:CreateWindow(title)
                     Parent = F,
                 })
                 corner(MainBtn, UDim.new(0, 6))
-                mkStroke(MainBtn, M.Border, 1, 0.5)
+                local btnStroke = mkStroke(MainBtn, M.Border, 1, 0.5)
 
                 local SelectedLbl = make("TextLabel", {
                     Size = UDim2.new(1, -20, 1, 0),
@@ -837,18 +855,21 @@ function MinimalUI:CreateWindow(title)
                     Parent = MainBtn,
                 })
 
-                -- Контейнер для списка (помещаем НАД всем, используя GUI напрямую)
+                -- Контейнер для списка (помещаем НАД всем)
                 local DropdownContainer = make("Frame", {
                     Size = UDim2.new(0, 110, 0, 0),
                     BackgroundColor3 = M.Sec,
                     BorderSizePixel = 0,
                     Visible = false,
-                    ClipsDescendants = true,
+                    ClipsDescendants = false,
                     ZIndex = 1000,
-                    Parent = GUI, -- Родитель - ScreenGui, чтобы быть поверх всего
+                    Parent = GUI,
                 })
                 corner(DropdownContainer, UDim.new(0, 6))
-                mkStroke(DropdownContainer, M.Border, 1, 0.8)
+                local containerStroke = mkStroke(DropdownContainer, M.Border, 1, 0.8)
+                
+                -- Добавляем контейнер в реестр для обновления цветов при смене темы
+                table.insert(dropdownContainers, DropdownContainer)
 
                 local List = make("ScrollingFrame", {
                     Size = UDim2.new(1, 0, 1, 0),
@@ -871,51 +892,47 @@ function MinimalUI:CreateWindow(title)
                 local function updateDropdownPosition()
                     local absPos = MainBtn.AbsolutePosition
                     local absSize = MainBtn.AbsoluteSize
-                    local targetSize = math.min(#options * 25, 125)
                     
                     DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
-                    DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
-                    
-                    if isOpen then
-                        DropdownContainer.Size = UDim2.new(0, 110, 0, targetSize)
-                    end
-                    
-                    List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
                 end
 
-                -- Функция открытия/закрытия списка
+                -- Функция плавного открытия/закрытия
                 local function toggleList()
-                    isOpen = not isOpen
                     if isOpen then
-                        updateDropdownPosition()
-                        DropdownContainer.Visible = true
-                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, math.min(#options * 25, 125))}, 0.3)
-                        tw(Arrow, {Rotation = 180}, 0.3)
-                    else
-                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.2)
+                        -- Закрываем с анимацией
+                        isOpen = false
+                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
                         tw(Arrow, {Rotation = 0}, 0.2)
-                        task.delay(0.2, function() 
+                        task.delay(0.25, function() 
                             if not isOpen then 
                                 DropdownContainer.Visible = false 
                             end 
                         end)
-                    end
-                end
-
-                -- Обновляем позицию при скролле или изменении размера окна
-                local function onViewportChanged()
-                    if isOpen and DropdownContainer.Visible then
+                    else
+                        -- Открываем с анимацией
+                        isOpen = true
                         updateDropdownPosition()
+                        DropdownContainer.Visible = true
+                        local targetSize = math.min(#options * 25, 125)
+                        -- Сначала показываем контейнер, потом анимируем размер
+                        DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
+                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        tw(Arrow, {Rotation = 180}, 0.3)
                     end
                 end
 
-                -- Отслеживаем изменения позиции
-                RS.RenderStepped:Connect(onViewportChanged)
-                
-                -- Также отслеживаем скролл в ScrollingFrame
-                if Scroll then
-                    Scroll:GetPropertyChangedSignal("CanvasPosition"):Connect(onViewportChanged)
+                -- Обновляем позицию каждый кадр при открытом состоянии
+                local connection
+                local function startPositionTracking()
+                    if connection then connection:Disconnect() end
+                    connection = RS.RenderStepped:Connect(function()
+                        if isOpen and DropdownContainer.Visible then
+                            updateDropdownPosition()
+                        end
+                    end)
                 end
+                
+                startPositionTracking()
 
                 -- Невидимая кнопка для клика
                 local ClickBtn = make("TextButton", {
@@ -958,7 +975,8 @@ function MinimalUI:CreateWindow(title)
                 List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
 
                 -- Закрытие при клике вне области
-                local function onGlobalClick(input)
+                local function onGlobalClick(input, gameProcessed)
+                    if gameProcessed then return end
                     if isOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
                         local mousePos = input.Position
                         local btnRect = MainBtn.AbsolutePosition
@@ -974,7 +992,9 @@ function MinimalUI:CreateWindow(title)
                                                   mousePos.Y >= dropRect.Y and mousePos.Y <= dropRect.Y + dropSize.Y
                         
                         if not clickedOnButton and not clickedOnDropdown then
-                            toggleList()
+                            if isOpen then
+                                toggleList()
+                            end
                         end
                     end
                 end
