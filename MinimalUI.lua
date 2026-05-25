@@ -812,225 +812,269 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- ── DROPDOWN (ИСПРАВЛЕННЫЙ) ───────────────────────
-            function Section:CreateDropdown(text, options, default, callback)
-                callback = callback or function() end
-                local selected = default or options[1] or "Select..."
-                local isOpen = false
-                local optionButtons = {} -- храним кнопки опций для обновления темы
-                addSep("dropdown")
+            ── DROPDOWN (FIXED WITH SETOPTIONS) ───────────────────────
+function Section:CreateDropdown(text, options, default, callback)
+    callback = callback or function() end
+    local selected = default or options[1] or "Select..."
+    local isOpen = false
+    local optionButtons = {} -- store option buttons for theme update
+    local currentOptions = options -- store current options
+    addSep("dropdown")
 
-                local F = make("Frame", {
-                    Size = UDim2.new(1, 0, 0, 36),
-                    BackgroundTransparency = 1,
-                    Parent = Items,
-                })
+    local F = make("Frame", {
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundTransparency = 1,
+        Parent = Items,
+    })
 
-                local Lbl = make("TextLabel", {
-                    Size = UDim2.new(1, -130, 1, 0),
-                    BackgroundTransparency = 1,
-                    Text = text,
-                    TextColor3 = M.Text,
-                    TextSize = 13, Font = M.SubF,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    Parent = F,
-                })
-                table.insert(mText, Lbl)
+    local Lbl = make("TextLabel", {
+        Size = UDim2.new(1, -130, 1, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = M.Text,
+        TextSize = 13, Font = M.SubF,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = F,
+    })
+    table.insert(mText, Lbl)
 
-                -- Основная кнопка дропдауна (справа)
-                local MainBtn = make("Frame", {
-                    Size = UDim2.new(0, 110, 0, 24),
-                    Position = UDim2.new(1, -110, 0.5, -12),
-                    BackgroundColor3 = M.Sec,
-                    Parent = F,
-                })
-                corner(MainBtn, UDim.new(0, 6))
-                local btnStroke = mkStroke(MainBtn, M.Border, 1, 0.5)
+    -- main dropdown button (right side)
+    local MainBtn = make("Frame", {
+        Size = UDim2.new(0, 110, 0, 24),
+        Position = UDim2.new(1, -110, 0.5, -12),
+        BackgroundColor3 = M.Sec,
+        Parent = F,
+    })
+    corner(MainBtn, UDim.new(0, 6))
+    local btnStroke = mkStroke(MainBtn, M.Border, 1, 0.5)
 
-                local SelectedLbl = make("TextLabel", {
-                    Size = UDim2.new(1, -20, 1, 0),
-                    Position = UDim2.new(0, 8, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = selected,
-                    TextColor3 = M.Text,
-                    TextSize = 12, Font = M.Font,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    Parent = MainBtn,
-                })
+    local SelectedLbl = make("TextLabel", {
+        Size = UDim2.new(1, -20, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
+        BackgroundTransparency = 1,
+        Text = selected,
+        TextColor3 = M.Text,
+        TextSize = 12, Font = M.Font,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = MainBtn,
+    })
 
-                local Arrow = make("TextLabel", {
-                    Size = UDim2.new(0, 20, 1, 0),
-                    Position = UDim2.new(1, -20, 0, 0),
-                    BackgroundTransparency = 1,
-                    Text = "▼",
-                    TextColor3 = M.Sub,
-                    TextSize = 10, Font = M.Font,
-                    Parent = MainBtn,
-                })
+    local Arrow = make("TextLabel", {
+        Size = UDim2.new(0, 20, 1, 0),
+        Position = UDim2.new(1, -20, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "▼",
+        TextColor3 = M.Sub,
+        TextSize = 10, Font = M.Font,
+        Parent = MainBtn,
+    })
 
-                -- Контейнер для списка (помещаем НАД всем)
-                local DropdownContainer = make("Frame", {
-                    Size = UDim2.new(0, 110, 0, 0),
-                    BackgroundColor3 = M.Sec,
-                    BorderSizePixel = 0,
-                    Visible = false,
-                    ClipsDescendants = false,
-                    ZIndex = 1000,
-                    Parent = GUI,
-                })
-                corner(DropdownContainer, UDim.new(0, 6))
-                local containerStroke = mkStroke(DropdownContainer, M.Border, 1, 0.8)
+    -- container for list (placed above everything)
+    local DropdownContainer = make("Frame", {
+        Size = UDim2.new(0, 110, 0, 0),
+        BackgroundColor3 = M.Sec,
+        BorderSizePixel = 0,
+        Visible = false,
+        ClipsDescendants = false,
+        ZIndex = 1000,
+        Parent = GUI,
+    })
+    corner(DropdownContainer, UDim.new(0, 6))
+    local containerStroke = mkStroke(DropdownContainer, M.Border, 1, 0.8)
 
-                local List = make("ScrollingFrame", {
-                    Size = UDim2.new(1, 0, 1, 0),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    CanvasSize = UDim2.new(0, 0, 0, 0),
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = T.A,
-                    ZIndex = 1001,
-                    Parent = DropdownContainer,
-                })
+    local List = make("ScrollingFrame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = T.A,
+        ZIndex = 1001,
+        Parent = DropdownContainer,
+    })
 
-                local ListLayout = make("UIListLayout", {
-                    Parent = List,
-                    SortOrder = Enum.SortOrder.LayoutOrder,
-                    Padding = UDim.new(0, 2)
-                })
+    local ListLayout = make("UIListLayout", {
+        Parent = List,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 2)
+    })
 
-                -- Функция обновления позиции дропдауна
-                local function updateDropdownPosition()
-                    local absPos = MainBtn.AbsolutePosition
-                    local absSize = MainBtn.AbsoluteSize
-                    
-                    DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+    -- function to rebuild dropdown options
+    local function rebuildOptions(newOptions)
+        -- clear existing buttons
+        for _, btn in ipairs(optionButtons) do
+            btn:Destroy()
+        end
+        optionButtons = {}
+        currentOptions = newOptions
+        
+        -- create new buttons
+        for i, opt in ipairs(newOptions) do
+            local OptBtn = make("TextButton", {
+                Size = UDim2.new(1, 0, 0, 25),
+                BackgroundTransparency = 1,
+                Text = "  " .. opt,
+                TextColor3 = M.Text,
+                TextSize = 12, Font = M.Font,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 1002,
+                Parent = List,
+            })
+            table.insert(optionButtons, OptBtn)
+
+            OptBtn.MouseButton1Click:Connect(function()
+                selected = opt
+                SelectedLbl.Text = opt
+                callback(opt)
+                if isOpen then
+                    toggleList()
                 end
+            end)
 
-                -- Функция плавного открытия/закрытия
-                local function toggleList()
-                    if isOpen then
-                        -- Закрываем с анимацией
-                        isOpen = false
-                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-                        tw(Arrow, {Rotation = 0}, 0.2)
-                        task.delay(0.25, function() 
-                            if not isOpen then 
-                                DropdownContainer.Visible = false 
-                            end 
-                        end)
-                    else
-                        -- Открываем с анимацией
-                        isOpen = true
-                        updateDropdownPosition()
-                        DropdownContainer.Visible = true
-                        local targetSize = math.min(#options * 25, 125)
-                        DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
-                        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                        tw(Arrow, {Rotation = 180}, 0.3)
-                    end
-                end
-
-                -- Обновляем позицию каждый кадр при открытом состоянии
-                local connection
-                local function startPositionTracking()
-                    if connection then connection:Disconnect() end
-                    connection = RS.RenderStepped:Connect(function()
-                        if isOpen and DropdownContainer.Visible then
-                            updateDropdownPosition()
-                        end
-                    end)
-                end
-                
-                startPositionTracking()
-
-                -- Невидимая кнопка для клика
-                local ClickBtn = make("TextButton", {
-                    Size = UDim2.new(1, 0, 1, 0),
-                    BackgroundTransparency = 1,
-                    Text = "",
-                    Parent = MainBtn,
-                })
-                ClickBtn.MouseButton1Click:Connect(toggleList)
-
-                -- Создание опций
-                for i, opt in ipairs(options) do
-                    local OptBtn = make("TextButton", {
-                        Size = UDim2.new(1, 0, 0, 25),
-                        BackgroundTransparency = 1,
-                        Text = "  " .. opt,
-                        TextColor3 = M.Text,
-                        TextSize = 12, Font = M.Font,
-                        TextXAlignment = Enum.TextXAlignment.Left,
-                        ZIndex = 1002,
-                        Parent = List,
-                    })
-                    table.insert(optionButtons, OptBtn)
-
-                    OptBtn.MouseButton1Click:Connect(function()
-                        selected = opt
-                        SelectedLbl.Text = opt
-                        callback(opt)
-                        toggleList()
-                    end)
-
-                    -- Эффект наведения
-                    OptBtn.MouseEnter:Connect(function() 
-                        tw(OptBtn, {BackgroundTransparency = 0.9, BackgroundColor3 = T.A}, 0.1) 
-                    end)
-                    OptBtn.MouseLeave:Connect(function() 
-                        tw(OptBtn, {BackgroundTransparency = 1}, 0.1) 
-                    end)
-                end
-
-                List.CanvasSize = UDim2.new(0, 0, 0, #options * 25 + 4)
-
-                -- Регистрируем дропдаун для обновления темы
-                local dropdownData = {
-                    mainBtn = MainBtn,
-                    btnStroke = btnStroke,
-                    selectedLbl = SelectedLbl,
-                    arrow = Arrow,
-                    container = DropdownContainer,
-                    containerStroke = containerStroke,
-                    optionButtons = optionButtons
-                }
-                table.insert(dropdownsRegistry, dropdownData)
-
-                -- Закрытие при клике вне области
-                local function onGlobalClick(input, gameProcessed)
-                    if gameProcessed then return end
-                    if isOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        local mousePos = input.Position
-                        local btnRect = MainBtn.AbsolutePosition
-                        local btnSize = MainBtn.AbsoluteSize
-                        local dropRect = DropdownContainer.AbsolutePosition
-                        local dropSize = DropdownContainer.AbsoluteSize
-                        
-                        local clickedOnButton = mousePos.X >= btnRect.X and mousePos.X <= btnRect.X + btnSize.X and
-                                                mousePos.Y >= btnRect.Y and mousePos.Y <= btnRect.Y + btnSize.Y
-                        
-                        local clickedOnDropdown = DropdownContainer.Visible and 
-                                                  mousePos.X >= dropRect.X and mousePos.X <= dropRect.X + dropSize.X and
-                                                  mousePos.Y >= dropRect.Y and mousePos.Y <= dropRect.Y + dropSize.Y
-                        
-                        if not clickedOnButton and not clickedOnDropdown then
-                            if isOpen then
-                                toggleList()
-                            end
-                        end
-                    end
-                end
-                
-                UIS.InputBegan:Connect(onGlobalClick)
-
-                local API = {}
-                function API:Set(val)
-                    selected = val
-                    SelectedLbl.Text = val
-                    callback(val)
-                end
-                return API
+            -- hover effect
+            OptBtn.MouseEnter:Connect(function() 
+                tw(OptBtn, {BackgroundTransparency = 0.9, BackgroundColor3 = T.A}, 0.1) 
+            end)
+            OptBtn.MouseLeave:Connect(function() 
+                tw(OptBtn, {BackgroundTransparency = 1}, 0.1) 
+            end)
+        end
+        
+        List.CanvasSize = UDim2.new(0, 0, 0, #newOptions * 25 + 4)
+        
+        -- update dropdown data for theme
+        local dropdownData = nil
+        for i, data in ipairs(dropdownsRegistry) do
+            if data.mainBtn == MainBtn then
+                dropdownData = data
+                break
             end
+        end
+        if dropdownData then
+            dropdownData.optionButtons = optionButtons
+        end
+    end
+
+    local function updateDropdownPosition()
+        local absPos = MainBtn.AbsolutePosition
+        local absSize = MainBtn.AbsoluteSize
+        
+        DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+    end
+
+    -- smooth open/close function
+    local function toggleList()
+        if isOpen then
+            -- close with animation
+            isOpen = false
+            tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+            tw(Arrow, {Rotation = 0}, 0.2)
+            task.delay(0.25, function() 
+                if not isOpen then 
+                    DropdownContainer.Visible = false 
+                end 
+            end)
+        else
+            -- open with animation
+            isOpen = true
+            updateDropdownPosition()
+            DropdownContainer.Visible = true
+            local targetSize = math.min(#currentOptions * 25, 125)
+            DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
+            tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            tw(Arrow, {Rotation = 180}, 0.3)
+        end
+    end
+
+    -- update position every frame when open
+    local connection
+    local function startPositionTracking()
+        if connection then connection:Disconnect() end
+        connection = RS.RenderStepped:Connect(function()
+            if isOpen and DropdownContainer.Visible then
+                updateDropdownPosition()
+            end
+        end)
+    end
+    
+    startPositionTracking()
+
+    -- invisible button for click
+    local ClickBtn = make("TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        Parent = MainBtn,
+    })
+    ClickBtn.MouseButton1Click:Connect(toggleList)
+
+    -- create initial options
+    rebuildOptions(options)
+
+    -- register dropdown for theme update
+    local dropdownData = {
+        mainBtn = MainBtn,
+        btnStroke = btnStroke,
+        selectedLbl = SelectedLbl,
+        arrow = Arrow,
+        container = DropdownContainer,
+        containerStroke = containerStroke,
+        optionButtons = optionButtons
+    }
+    table.insert(dropdownsRegistry, dropdownData)
+
+    -- close when clicking outside
+    local function onGlobalClick(input, gameProcessed)
+        if gameProcessed then return end
+        if isOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = input.Position
+            local btnRect = MainBtn.AbsolutePosition
+            local btnSize = MainBtn.AbsoluteSize
+            local dropRect = DropdownContainer.AbsolutePosition
+            local dropSize = DropdownContainer.AbsoluteSize
+            
+            local clickedOnButton = mousePos.X >= btnRect.X and mousePos.X <= btnRect.X + btnSize.X and
+                                    mousePos.Y >= btnRect.Y and mousePos.Y <= btnRect.Y + btnSize.Y
+            
+            local clickedOnDropdown = DropdownContainer.Visible and 
+                                      mousePos.X >= dropRect.X and mousePos.X <= dropRect.X + dropSize.X and
+                                      mousePos.Y >= dropRect.Y and mousePos.Y <= dropRect.Y + dropSize.Y
+            
+            if not clickedOnButton and not clickedOnDropdown then
+                if isOpen then
+                    toggleList()
+                end
+            end
+        end
+    end
+    
+    UIS.InputBegan:Connect(onGlobalClick)
+
+    local API = {}
+    function API:Set(val)
+        selected = val
+        SelectedLbl.Text = val
+        callback(val)
+    end
+    
+    -- NEW METHOD: SetOptions - updates dropdown options dynamically
+    function API:SetOptions(newOptions)
+        if not newOptions or #newOptions == 0 then
+            newOptions = {"No options"}
+        end
+        rebuildOptions(newOptions)
+        -- reset selected to first option
+        selected = newOptions[1] or "Select..."
+        SelectedLbl.Text = selected
+        callback(selected)
+    end
+    
+    function API:GetValue()
+        return selected
+    end
+    
+    return API
+end
 
             -- ── SLIDER ───────────────────────────────────────
             function Section:CreateSlider(text, min, max, default, callback)
