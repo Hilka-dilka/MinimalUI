@@ -814,7 +814,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- DROPDOWN (С АНИМАЦИЯМИ И ПОЛНЫМ ОТОБРАЖЕНИЕМ ВСЕХ ЭЛЕМЕНТОВ)
+            -- DROPDOWN (ТОЛЬКО ФИКС ОТОБРАЖЕНИЯ)
 function Section:CreateDropdown(text, options, default, callback)
     callback = callback or function() end
     local selected = default or options[1] or "Select..."
@@ -887,7 +887,7 @@ function Section:CreateDropdown(text, options, default, callback)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ScrollBarThickness = 4,
+        ScrollBarThickness = 3,
         ScrollBarImageColor3 = T.A,
         ZIndex = 1001,
         Parent = DropdownContainer,
@@ -899,7 +899,6 @@ function Section:CreateDropdown(text, options, default, callback)
         Padding = UDim.new(0, 2)
     })
 
-    -- Обновление позиции
     local function updateDropdownPosition()
         local absPos = MainBtn.AbsolutePosition
         local absSize = MainBtn.AbsoluteSize
@@ -929,24 +928,18 @@ function Section:CreateDropdown(text, options, default, callback)
         
         updateDropdownPosition()
         DropdownContainer.Visible = true
-        
-        -- Рассчитываем высоту: каждый элемент 25px + отступы
-        local itemCount = #currentOptions
-        local totalHeight = itemCount * 25 + 4
-        
-        -- Делаем высоту такой, чтобы все элементы поместились
-        -- Если элементов много, ставим максимальную высоту 200px и включаем скролл
-        local containerHeight = math.min(totalHeight, 200)
-        
+        local targetSize = math.min(#currentOptions * 25, 125)
         DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
         
-        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, containerHeight)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         tw(Arrow, {Rotation = 180}, 0.3)
         
-        -- Устанавливаем CanvasSize для скроллинга
-        List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-        
-        task.delay(0.3, function()
+        -- ФИКС: обновляем CanvasSize ПОСЛЕ анимации, чтобы все элементы были видны
+        task.delay(0.31, function()
+            if isOpen then
+                local totalHeight = #currentOptions * 25
+                List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+            end
             isAnimating = false
         end)
     end
@@ -980,7 +973,6 @@ function Section:CreateDropdown(text, options, default, callback)
     })
     ClickBtn.MouseButton1Click:Connect(toggleList)
 
-    -- Функция для пересоздания опций
     local function rebuildOptions(newOptions)
         for _, btn in ipairs(optionButtons) do
             btn:Destroy()
@@ -1019,12 +1011,9 @@ function Section:CreateDropdown(text, options, default, callback)
             end)
         end
         
-        -- ВАЖНО: Обновляем CanvasSize для корректного скроллинга
-        local totalHeight = #newOptions * 25 + 4
-        List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+        List.CanvasSize = UDim2.new(0, 0, 0, #newOptions * 25)
     end
 
-    -- создание начальных опций
     rebuildOptions(options)
 
     local dropdownData = {
@@ -1038,7 +1027,6 @@ function Section:CreateDropdown(text, options, default, callback)
     }
     table.insert(dropdownsRegistry, dropdownData)
 
-    -- закрытие при клике вне области
     local function onGlobalClick(input, gameProcessed)
         if gameProcessed then return end
         if isOpen and not isAnimating and input.UserInputType == Enum.UserInputType.MouseButton1 then
