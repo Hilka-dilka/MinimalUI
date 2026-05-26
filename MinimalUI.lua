@@ -813,7 +813,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- DROPDOWN (FIXED WITH ANIMATION + CLOSE ON SELECT + SetValue + SMART POSITIONING)
+            -- DROPDOWN (FIXED - FULL SCROLLABLE LIST)
 function Section:CreateDropdown(text, options, default, callback)
     callback = callback or function() end
     local selected = default or options[1] or "Select..."
@@ -821,7 +821,7 @@ function Section:CreateDropdown(text, options, default, callback)
     local optionButtons = {}
     local isAnimating = false
     local currentOptions = options
-    local dropdownDirection = "down" -- "down" или "up"
+    local dropdownDirection = "down"
     addSep("dropdown")
 
     local F = make("Frame", {
@@ -876,7 +876,7 @@ function Section:CreateDropdown(text, options, default, callback)
         BackgroundColor3 = M.Sec,
         BorderSizePixel = 0,
         Visible = false,
-        ClipsDescendants = false,
+        ClipsDescendants = true,
         ZIndex = 1000,
         Parent = GUI,
     })
@@ -887,38 +887,40 @@ function Section:CreateDropdown(text, options, default, callback)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 2,
+        ScrollBarThickness = 4,
         ScrollBarImageColor3 = T.A,
+        ScrollBarImageTransparency = 0.5,
         ZIndex = 1001,
         Parent = DropdownContainer,
     })
-
+    
     local ListLayout = make("UIListLayout", {
         Parent = List,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 2)
     })
 
-    -- Функция для расчета оптимальной позиции (вверх или вниз)
+    -- Функция для расчета оптимальной позиции и высоты
     local function updateDropdownPosition()
         local absPos = MainBtn.AbsolutePosition
         local absSize = MainBtn.AbsoluteSize
         local screenHeight = Camera.ViewportSize.Y
         
-        local targetHeight = math.min(#currentOptions * 25 + 4, 125)
-        local spaceBelow = screenHeight - (absPos.Y + absSize.Y)
-        local spaceAbove = absPos.Y
+        local itemHeight = 25
+        local totalItemsHeight = #currentOptions * itemHeight + 4
+        local maxHeight = math.min(totalItemsHeight, 200) -- Максимум 200px (около 8 элементов)
+        local spaceBelow = screenHeight - (absPos.Y + absSize.Y + 10) -- +10 для отступа
+        local spaceAbove = absPos.Y - 10
         
         -- Решаем, в какую сторону открывать
-        if spaceBelow >= targetHeight or spaceBelow >= spaceAbove then
-            -- Открываем вниз
+        if spaceBelow >= maxHeight or spaceBelow >= spaceAbove then
             dropdownDirection = "down"
-            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
+            return maxHeight, spaceBelow
         else
-            -- Открываем вверх
             dropdownDirection = "up"
-            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y - targetHeight)
+            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y - maxHeight - 2)
+            return maxHeight, spaceAbove
         end
     end
 
@@ -927,10 +929,10 @@ function Section:CreateDropdown(text, options, default, callback)
         isAnimating = true
         isOpen = false
         
-        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-        tw(Arrow, {Rotation = 0}, 0.2)
+        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        tw(Arrow, {Rotation = 0}, 0.15)
         
-        task.delay(0.25, function() 
+        task.delay(0.2, function() 
             if not isOpen then 
                 DropdownContainer.Visible = false 
             end
@@ -943,16 +945,24 @@ function Section:CreateDropdown(text, options, default, callback)
         isAnimating = true
         isOpen = true
         
-        updateDropdownPosition()
-        DropdownContainer.Visible = true
+        local maxHeight, availableSpace = updateDropdownPosition()
+        local finalHeight = math.min(maxHeight, availableSpace - 10)
+        finalHeight = math.max(finalHeight, 50) -- Минимум 50px
         
-        local targetSize = math.min(#currentOptions * 25 + 4, 125)
+        DropdownContainer.Visible = true
         DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
         
-        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        tw(Arrow, {Rotation = 180}, 0.3)
+        -- Устанавливаем финальную высоту контейнера
+        DropdownContainer.Size = UDim2.new(0, 110, 0, finalHeight)
         
-        task.delay(0.3, function()
+        tw(Arrow, {Rotation = 180}, 0.2)
+        
+        -- Обновляем CanvasSize после открытия
+        task.wait(0.05)
+        local totalHeight = #currentOptions * 25 + 4
+        List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+        
+        task.delay(0.2, function()
             isAnimating = false
         end)
     end
@@ -971,7 +981,15 @@ function Section:CreateDropdown(text, options, default, callback)
         if connection then connection:Disconnect() end
         connection = RS.RenderStepped:Connect(function()
             if isOpen and DropdownContainer.Visible then
-                updateDropdownPosition()
+                local absPos = MainBtn.AbsolutePosition
+                local absSize = MainBtn.AbsoluteSize
+                local currentHeight = DropdownContainer.AbsoluteSize.Y
+                
+                if dropdownDirection == "down" then
+                    DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
+                else
+                    DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y - currentHeight - 2)
+                end
             end
         end)
     end
@@ -1025,7 +1043,10 @@ function Section:CreateDropdown(text, options, default, callback)
             end)
         end
         
-        List.CanvasSize = UDim2.new(0, 0, 0, #newOptions * 25 + 4)
+        -- Обновляем CanvasSize для скроллинга
+        task.wait()
+        local totalHeight = #newOptions * 25 + 4
+        List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
     end
 
     -- создание начальных опций
@@ -1066,6 +1087,16 @@ function Section:CreateDropdown(text, options, default, callback)
     end
     
     UIS.InputBegan:Connect(onGlobalClick)
+
+    -- Функция для очистки ресурсов при уничтожении
+    local function cleanup()
+        if connection then connection:Disconnect() end
+    end
+    
+    -- Добавляем очистку при уничтожении GUI
+    GUI.AncestryChanged:Connect(function()
+        if not GUI.Parent then cleanup() end
+    end)
 
     local API = {}
     
