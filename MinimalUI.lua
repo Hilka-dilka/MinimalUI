@@ -23,6 +23,7 @@ local TS  = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local RS  = game:GetService("RunService")
 local LP  = game:GetService("Players").LocalPlayer
+local Camera = workspace.CurrentCamera
 
 -- ─── Accent theme (shared table — closures read T.A / T.A2) ──
 local T = {
