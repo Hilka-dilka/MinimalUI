@@ -814,7 +814,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- DROPDOWN (FIXED - FULL SCROLLABLE LIST)
+            -- DROPDOWN (С АНИМАЦИЯМИ И ПОЛНЫМ ОТОБРАЖЕНИЕМ ВСЕХ ЭЛЕМЕНТОВ)
 function Section:CreateDropdown(text, options, default, callback)
     callback = callback or function() end
     local selected = default or options[1] or "Select..."
@@ -822,7 +822,6 @@ function Section:CreateDropdown(text, options, default, callback)
     local optionButtons = {}
     local isAnimating = false
     local currentOptions = options
-    local dropdownDirection = "down"
     addSep("dropdown")
 
     local F = make("Frame", {
@@ -890,7 +889,6 @@ function Section:CreateDropdown(text, options, default, callback)
         BorderSizePixel = 0,
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = T.A,
-        ScrollBarImageTransparency = 0.5,
         ZIndex = 1001,
         Parent = DropdownContainer,
     })
@@ -901,28 +899,11 @@ function Section:CreateDropdown(text, options, default, callback)
         Padding = UDim.new(0, 2)
     })
 
-    -- Функция для расчета оптимальной позиции и высоты
+    -- Обновление позиции
     local function updateDropdownPosition()
         local absPos = MainBtn.AbsolutePosition
         local absSize = MainBtn.AbsoluteSize
-        local screenHeight = Camera.ViewportSize.Y
-        
-        local itemHeight = 25
-        local totalItemsHeight = #currentOptions * itemHeight + 4
-        local maxHeight = math.min(totalItemsHeight, 200) -- Максимум 200px (около 8 элементов)
-        local spaceBelow = screenHeight - (absPos.Y + absSize.Y + 10) -- +10 для отступа
-        local spaceAbove = absPos.Y - 10
-        
-        -- Решаем, в какую сторону открывать
-        if spaceBelow >= maxHeight or spaceBelow >= spaceAbove then
-            dropdownDirection = "down"
-            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
-            return maxHeight, spaceBelow
-        else
-            dropdownDirection = "up"
-            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y - maxHeight - 2)
-            return maxHeight, spaceAbove
-        end
+        DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
     end
 
     local function closeDropdown()
@@ -930,10 +911,10 @@ function Section:CreateDropdown(text, options, default, callback)
         isAnimating = true
         isOpen = false
         
-        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-        tw(Arrow, {Rotation = 0}, 0.15)
+        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        tw(Arrow, {Rotation = 0}, 0.2)
         
-        task.delay(0.2, function() 
+        task.delay(0.25, function() 
             if not isOpen then 
                 DropdownContainer.Visible = false 
             end
@@ -946,24 +927,26 @@ function Section:CreateDropdown(text, options, default, callback)
         isAnimating = true
         isOpen = true
         
-        local maxHeight, availableSpace = updateDropdownPosition()
-        local finalHeight = math.min(maxHeight, availableSpace - 10)
-        finalHeight = math.max(finalHeight, 50) -- Минимум 50px
-        
+        updateDropdownPosition()
         DropdownContainer.Visible = true
+        
+        -- Рассчитываем высоту: каждый элемент 25px + отступы
+        local itemCount = #currentOptions
+        local totalHeight = itemCount * 25 + 4
+        
+        -- Делаем высоту такой, чтобы все элементы поместились
+        -- Если элементов много, ставим максимальную высоту 200px и включаем скролл
+        local containerHeight = math.min(totalHeight, 200)
+        
         DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
         
-        -- Устанавливаем финальную высоту контейнера
-        DropdownContainer.Size = UDim2.new(0, 110, 0, finalHeight)
+        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, containerHeight)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        tw(Arrow, {Rotation = 180}, 0.3)
         
-        tw(Arrow, {Rotation = 180}, 0.2)
-        
-        -- Обновляем CanvasSize после открытия
-        task.wait(0.05)
-        local totalHeight = #currentOptions * 25 + 4
+        -- Устанавливаем CanvasSize для скроллинга
         List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
         
-        task.delay(0.2, function()
+        task.delay(0.3, function()
             isAnimating = false
         end)
     end
@@ -982,15 +965,7 @@ function Section:CreateDropdown(text, options, default, callback)
         if connection then connection:Disconnect() end
         connection = RS.RenderStepped:Connect(function()
             if isOpen and DropdownContainer.Visible then
-                local absPos = MainBtn.AbsolutePosition
-                local absSize = MainBtn.AbsoluteSize
-                local currentHeight = DropdownContainer.AbsoluteSize.Y
-                
-                if dropdownDirection == "down" then
-                    DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
-                else
-                    DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y - currentHeight - 2)
-                end
+                updateDropdownPosition()
             end
         end)
     end
@@ -1044,8 +1019,7 @@ function Section:CreateDropdown(text, options, default, callback)
             end)
         end
         
-        -- Обновляем CanvasSize для скроллинга
-        task.wait()
+        -- ВАЖНО: Обновляем CanvasSize для корректного скроллинга
         local totalHeight = #newOptions * 25 + 4
         List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
     end
@@ -1088,16 +1062,6 @@ function Section:CreateDropdown(text, options, default, callback)
     end
     
     UIS.InputBegan:Connect(onGlobalClick)
-
-    -- Функция для очистки ресурсов при уничтожении
-    local function cleanup()
-        if connection then connection:Disconnect() end
-    end
-    
-    -- Добавляем очистку при уничтожении GUI
-    GUI.AncestryChanged:Connect(function()
-        if not GUI.Parent then cleanup() end
-    end)
 
     local API = {}
     
