@@ -814,7 +814,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- DROPDOWN (ТОЛЬКО ФИКС ОТОБРАЖЕНИЯ)
+            -- DROPDOWN (КОРОТКИЙ, НО ВСЕ ЭЛЕМЕНТЫ ВИДНЫ ЧЕРЕЗ СКРОЛЛ)
 function Section:CreateDropdown(text, options, default, callback)
     callback = callback or function() end
     local selected = default or options[1] or "Select..."
@@ -902,7 +902,21 @@ function Section:CreateDropdown(text, options, default, callback)
     local function updateDropdownPosition()
         local absPos = MainBtn.AbsolutePosition
         local absSize = MainBtn.AbsoluteSize
-        DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+        local mainFrame = Main
+        local mainFramePos = mainFrame.AbsolutePosition
+        local mainFrameSize = mainFrame.AbsoluteSize
+        
+        -- Ограничиваем позицию, чтобы дропдаун не выходил за пределы меню
+        local x = math.max(mainFramePos.X, math.min(absPos.X, mainFramePos.X + mainFrameSize.X - 110))
+        local y = absPos.Y + absSize.Y
+        
+        -- Проверяем, не вылезает ли за нижнюю границу меню
+        local containerHeight = 90 -- фиксированная небольшая высота
+        if y + containerHeight > mainFramePos.Y + mainFrameSize.Y then
+            y = absPos.Y - containerHeight -- открываем вверх
+        end
+        
+        DropdownContainer.Position = UDim2.new(0, x, 0, y)
     end
 
     local function closeDropdown()
@@ -910,10 +924,10 @@ function Section:CreateDropdown(text, options, default, callback)
         isAnimating = true
         isOpen = false
         
-        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-        tw(Arrow, {Rotation = 0}, 0.2)
+        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, 0)}, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        tw(Arrow, {Rotation = 0}, 0.15)
         
-        task.delay(0.25, function() 
+        task.delay(0.2, function() 
             if not isOpen then 
                 DropdownContainer.Visible = false 
             end
@@ -928,18 +942,20 @@ function Section:CreateDropdown(text, options, default, callback)
         
         updateDropdownPosition()
         DropdownContainer.Visible = true
-        local targetSize = math.min(#currentOptions * 25, 125)
+        
+        -- Фиксированная небольшая высота 90px (примерно 3-4 элемента)
+        local containerHeight = 90
         DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
         
-        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        tw(Arrow, {Rotation = 180}, 0.3)
+        tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, containerHeight)}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        tw(Arrow, {Rotation = 180}, 0.2)
         
-        -- ФИКС: обновляем CanvasSize ПОСЛЕ анимации, чтобы все элементы были видны
-        task.delay(0.31, function()
-            if isOpen then
-                local totalHeight = #currentOptions * 25
-                List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-            end
+        -- ВАЖНО: Устанавливаем CanvasSize чтобы все элементы были доступны через скролл
+        task.wait(0.05)
+        local totalHeight = #currentOptions * 25
+        List.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+        
+        task.delay(0.25, function()
             isAnimating = false
         end)
     end
@@ -1011,6 +1027,7 @@ function Section:CreateDropdown(text, options, default, callback)
             end)
         end
         
+        -- CanvasSize для скролла (все элементы)
         List.CanvasSize = UDim2.new(0, 0, 0, #newOptions * 25)
     end
 
