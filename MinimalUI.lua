@@ -813,7 +813,7 @@ function MinimalUI:CreateWindow(title)
                 return API
             end
 
-            -- DROPDOWN (FIXED WITH ANIMATION + CLOSE ON SELECT + SetValue)
+            -- DROPDOWN (FIXED WITH ANIMATION + CLOSE ON SELECT + SetValue + SMART POSITIONING)
 function Section:CreateDropdown(text, options, default, callback)
     callback = callback or function() end
     local selected = default or options[1] or "Select..."
@@ -821,6 +821,7 @@ function Section:CreateDropdown(text, options, default, callback)
     local optionButtons = {}
     local isAnimating = false
     local currentOptions = options
+    local dropdownDirection = "down" -- "down" или "up"
     addSep("dropdown")
 
     local F = make("Frame", {
@@ -899,10 +900,26 @@ function Section:CreateDropdown(text, options, default, callback)
         Padding = UDim.new(0, 2)
     })
 
+    -- Функция для расчета оптимальной позиции (вверх или вниз)
     local function updateDropdownPosition()
         local absPos = MainBtn.AbsolutePosition
         local absSize = MainBtn.AbsoluteSize
-        DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+        local screenHeight = Camera.ViewportSize.Y
+        
+        local targetHeight = math.min(#currentOptions * 25 + 4, 125)
+        local spaceBelow = screenHeight - (absPos.Y + absSize.Y)
+        local spaceAbove = absPos.Y
+        
+        -- Решаем, в какую сторону открывать
+        if spaceBelow >= targetHeight or spaceBelow >= spaceAbove then
+            -- Открываем вниз
+            dropdownDirection = "down"
+            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+        else
+            -- Открываем вверх
+            dropdownDirection = "up"
+            DropdownContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y - targetHeight)
+        end
     end
 
     local function closeDropdown()
@@ -925,9 +942,11 @@ function Section:CreateDropdown(text, options, default, callback)
         if isOpen or isAnimating then return end
         isAnimating = true
         isOpen = true
+        
         updateDropdownPosition()
         DropdownContainer.Visible = true
-        local targetSize = math.min(#currentOptions * 25, 125)
+        
+        local targetSize = math.min(#currentOptions * 25 + 4, 125)
         DropdownContainer.Size = UDim2.new(0, 110, 0, 0)
         
         tw(DropdownContainer, {Size = UDim2.new(0, 110, 0, targetSize)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -1056,14 +1075,12 @@ function Section:CreateDropdown(text, options, default, callback)
         callback(val)
     end
     
-    -- ДОБАВЛЯЕМ МЕТОД SetValue
     function API:SetValue(val)
         selected = val
         SelectedLbl.Text = val
         callback(val)
     end
     
-    -- метод для обновления списка опций
     function API:SetOptions(newOptions)
         if not newOptions or #newOptions == 0 then
             newOptions = {"No options"}
