@@ -41,7 +41,7 @@ Five steps and your UI is ready
 ```lua
 -- Load via loadstring
 local UI = loadstring(game:HttpGet(
-"https://raw.githubusercontent.com/Hilka-dilka/MinimalUI/main/MinimalUI.lua"
+"https://raw.githubusercontent.com/Hilka-dilka/MinimalUI/main/MinimalUI_test.lua"
 ))()
 ```
 
