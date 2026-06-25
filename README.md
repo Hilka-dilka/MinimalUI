@@ -5,7 +5,7 @@
     ██║ ╚═╝ ██║██║██║ ╚████║██║██║ ╚═╝ ██║██║  ██║███████╗                 
     ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝ 
 
-### MinimalUI — Roblox Lua UI Library
+### MinimalUI — Roblox Lua UI Library created with AI
 
 
 MinimalUI — Minimalist, beautiful and powerful UI library for Roblox Lua scripts
