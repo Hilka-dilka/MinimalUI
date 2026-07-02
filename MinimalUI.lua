@@ -772,7 +772,7 @@ function MinimalUI:CreateWindow(title)
 
                 local BG = make("Frame", {
                     Size = UDim2.new(0, 38, 0, 20),
-                    Position = UDim2.new(1, -38, 0.5, -10),
+                    Position = UDim2.new(1, -38, 0, 6),
                     BackgroundColor3 = stateRef.v and T.A or M.Border,
                     Parent = F,
                 })
@@ -1600,7 +1600,7 @@ function Section:CreateToggleSlider(text, min, max, default, toggleDefault, call
     -- Тоггл (справа)
     local ToggleFrame = make("Frame", {
         Size = UDim2.new(0, 38, 0, 20),
-        Position = UDim2.new(1, -38, 0.5, -10),
+        Position = UDim2.new(1, -38, 0, 6),
         BackgroundTransparency = 1,
         Parent = TopRow,
     })
@@ -2007,7 +2007,7 @@ end
                 -- Превью цвета (квадрат слева от тоггла)
                 local ColorPreview = make("TextButton", {
                     Size = UDim2.new(0, 28, 0, 20),
-                    Position = UDim2.new(0, 0, 0.5, -10),
+                    Position = UDim2.new(0, 0, 0, 6),
                     BackgroundColor3 = col,
                     Text = "",
                     AutoButtonColor = false,
@@ -2019,7 +2019,7 @@ end
                 -- Тоггл (справа от превью)
                 local ToggleFrame = make("Frame", {
                     Size = UDim2.new(0, 38, 0, 20),
-                    Position = UDim2.new(1, -38, 0.5, -10),
+                    Position = UDim2.new(1, -38, 0, 6),
                     BackgroundTransparency = 1,
                     Parent = RightContainer,
                 })
