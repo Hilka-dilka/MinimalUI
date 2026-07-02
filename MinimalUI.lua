@@ -1968,52 +1968,69 @@ function Section:CreateToggleSlider(text, min, max, default, toggleDefault, call
 end
 
 
-                       -- ── TOGGLE PICKER (fixed layout) ─────────────────────
+                      -- ── TOGGLE COLOR PICKER (INLINE, FIXED) ─────────────────────
 function Section:CreateTogglePicker(text, defaultColor, toggleDefault, callback)
     callback = callback or function() end
 
+    local TweenService = game:GetService("TweenService")
+
+    -- главный контейнер
     local F = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 36),
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Parent = Section.Container
     })
 
-    local L = make("TextLabel", {
-        Size = UDim2.new(1, -90, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        TextColor3 = M.Text,
-        TextXAlignment = Enum.TextXAlignment.Left,
+    make("UIListLayout", {
+        Padding = UDim.new(0, 4),
+        SortOrder = Enum.SortOrder.LayoutOrder,
         Parent = F
     })
 
     -- состояние
     local col = defaultColor or Color3.fromRGB(255,255,255)
     local Enabled = toggleDefault or false
+    local Open = false
 
-    -- ░░ PREVIEW (квадрат цвета) ░░
+    -- ── TOP BAR ─────────────────────
+    local Top = make("Frame", {
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundTransparency = 1,
+        Parent = F
+    })
+
+    local L = make("TextLabel", {
+        Size = UDim2.new(1, -90, 1, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        TextColor3 = M.Text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = Top
+    })
+
+    -- PREVIEW (цвет)
     local Preview = make("TextButton", {
         Size = UDim2.new(0, 28, 0, 20),
-        Position = UDim2.new(1, -60, 0, 8), -- сдвинут влево
+        Position = UDim2.new(1, -60, 0, 8),
         BackgroundColor3 = col,
         Text = "",
         AutoButtonColor = false,
-        Parent = F,
+        Parent = Top
     })
     corner(Preview, UDim.new(0, 4))
     mkStroke(Preview, M.Border, 1, 0.4)
 
-    -- ░░ TOGGLE (справа) ░░
+    -- TOGGLE (справа)
     local Toggle = make("TextButton", {
         Size = UDim2.new(0, 24, 0, 24),
         Position = UDim2.new(1, -28, 0, 6),
         BackgroundColor3 = Enabled and M.Accent or M.Second,
         Text = "",
         AutoButtonColor = false,
-        Parent = F,
+        Parent = Top
     })
     corner(Toggle, UDim.new(1, 0))
     mkStroke(Toggle, M.Border, 1, 0.4)
@@ -2024,46 +2041,54 @@ function Section:CreateTogglePicker(text, defaultColor, toggleDefault, callback)
         callback(col, Enabled)
     end)
 
-    -- ░░ COLOR PICKER ░░
+    -- ── PICKER (INLINE, НЕ overlay) ─────────────────────
     local Picker = make("Frame", {
-        Size = UDim2.new(0, 180, 0, 140),
-        Position = UDim2.new(1, -180, 0, 36),
+        Size = UDim2.new(1, 0, 0, 0), -- закрыт
         BackgroundColor3 = M.Main,
-        Visible = false,
-        Parent = F,
-        ZIndex = 5
+        ClipsDescendants = true,
+        Parent = F
     })
     corner(Picker, UDim.new(0, 6))
     mkStroke(Picker, M.Border, 1, 0.4)
 
-    -- пример простого выбора цвета (можешь заменить на свой)
-    local Palette = make("TextButton", {
-        Size = UDim2.new(1, -10, 1, -10),
+    -- простой цветовой блок (можешь заменить на HSV потом)
+    local ColorArea = make("TextButton", {
+        Size = UDim2.new(1, -10, 0, 120),
         Position = UDim2.new(0, 5, 0, 5),
         BackgroundColor3 = col,
-        Text = "pick",
-        Parent = Picker,
-        ZIndex = 6
+        Text = "",
+        Parent = Picker
     })
-    corner(Palette, UDim.new(0, 4))
+    corner(ColorArea, UDim.new(0, 4))
 
-    Palette.MouseButton1Click:Connect(function()
-        col = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
+    ColorArea.MouseButton1Click:Connect(function()
+        col = Color3.fromRGB(
+            math.random(0,255),
+            math.random(0,255),
+            math.random(0,255)
+        )
         Preview.BackgroundColor3 = col
         callback(col, Enabled)
     end)
 
-    -- открыть/закрыть пикер
+    -- ── OPEN / CLOSE ─────────────────────
     Preview.MouseButton1Click:Connect(function()
-        Picker.Visible = not Picker.Visible
+        Open = not Open
+
+        TweenService:Create(Picker, TweenInfo.new(0.25), {
+            Size = Open and UDim2.new(1, 0, 0, 140) or UDim2.new(1, 0, 0, 0)
+        }):Play()
     end)
 
+    -- API
     return {
         SetColor = function(_, newCol)
             col = newCol
             Preview.BackgroundColor3 = col
+            ColorArea.BackgroundColor3 = col
             callback(col, Enabled)
         end,
+
         SetToggle = function(_, val)
             Enabled = val
             Toggle.BackgroundColor3 = Enabled and M.Accent or M.Second
