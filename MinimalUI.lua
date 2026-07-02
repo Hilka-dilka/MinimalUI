@@ -1968,218 +1968,106 @@ function Section:CreateToggleSlider(text, min, max, default, toggleDefault, call
 end
 
 
-                        function Section:CreateTogglePicker(text, defaultColor, toggleDefault, callback)
+                       -- ── TOGGLE PICKER (fixed layout) ─────────────────────
+function Section:CreateTogglePicker(text, defaultColor, toggleDefault, callback)
     callback = callback or function() end
 
-    local col = defaultColor or Color3.fromRGB(124, 58, 237)
-    local enabled = toggleDefault or false
-    local pickerOpen = false
-    local h, s, v = col:ToHSV()
-
-    addSep()
-
-    -- Основной контейнер (НЕ МЕНЯЕМ SIZE)
     local F = make("Frame", {
         Size = UDim2.new(1, 0, 0, 36),
         BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        Parent = Items,
+        Parent = Section.Container
     })
 
-    -- Контент строки
-    local Row = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundTransparency = 1,
-        Parent = F,
-    })
-
-    -- Текст
-    local Lbl = make("TextLabel", {
-        Size = UDim2.new(1, -100, 0, 36),
+    local L = make("TextLabel", {
+        Size = UDim2.new(1, -90, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = M.Text,
+        Font = Enum.Font.Gotham,
         TextSize = 13,
-        Font = M.SubF,
+        TextColor3 = M.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = Row,
+        Parent = F
     })
 
-    -- Правая часть
-    local RightContainer = make("Frame", {
-        Size = UDim2.new(0, 80, 1, 0),
-        Position = UDim2.new(1, -80, 0, 0),
-        BackgroundTransparency = 1,
-        Parent = Row,
-    })
+    -- состояние
+    local col = defaultColor or Color3.fromRGB(255,255,255)
+    local Enabled = toggleDefault or false
 
-    -- Цвет
-    local ColorPreview = make("TextButton", {
+    -- ░░ PREVIEW (квадрат цвета) ░░
+    local Preview = make("TextButton", {
         Size = UDim2.new(0, 28, 0, 20),
-        Position = UDim2.new(0, 0, 0.5, -10),
+        Position = UDim2.new(1, -60, 0, 8), -- сдвинут влево
         BackgroundColor3 = col,
         Text = "",
-        Parent = RightContainer,
+        AutoButtonColor = false,
+        Parent = F,
     })
-    corner(ColorPreview, UDim.new(0, 5))
-    mkStroke(ColorPreview, M.Border, 1, 0.4)
+    corner(Preview, UDim.new(0, 4))
+    mkStroke(Preview, M.Border, 1, 0.4)
 
-    -- Toggle
-    local ToggleFrame = make("Frame", {
-        Size = UDim2.new(0, 38, 0, 20),
-        Position = UDim2.new(1, -38, 0.5, -10),
-        BackgroundTransparency = 1,
-        Parent = RightContainer,
-    })
-
-    local ToggleBG = make("Frame", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = enabled and T.A or M.Border,
-        Parent = ToggleFrame,
-    })
-    corner(ToggleBG, UDim.new(1, 0))
-
-    local ToggleCircle = make("Frame", {
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
-        BackgroundColor3 = Color3.new(1,1,1),
-        Parent = ToggleBG,
-    })
-    corner(ToggleCircle, UDim.new(1, 0))
-
-    local ToggleBtn = make("TextButton", {
-        Size = UDim2.new(1,0,1,0),
-        BackgroundTransparency = 1,
+    -- ░░ TOGGLE (справа) ░░
+    local Toggle = make("TextButton", {
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(1, -28, 0, 6),
+        BackgroundColor3 = Enabled and M.Accent or M.Second,
         Text = "",
-        Parent = ToggleFrame,
+        AutoButtonColor = false,
+        Parent = F,
     })
+    corner(Toggle, UDim.new(1, 0))
+    mkStroke(Toggle, M.Border, 1, 0.4)
 
-    -- 📌 DROPDOWN КОНТЕЙНЕР (НЕ ЛОМАЕТ LAYOUT)
-    local PickerContainer = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 150),
-        Position = UDim2.new(0, 0, 1, 2),
+    Toggle.MouseButton1Click:Connect(function()
+        Enabled = not Enabled
+        Toggle.BackgroundColor3 = Enabled and M.Accent or M.Second
+        callback(col, Enabled)
+    end)
+
+    -- ░░ COLOR PICKER ░░
+    local Picker = make("Frame", {
+        Size = UDim2.new(0, 180, 0, 140),
+        Position = UDim2.new(1, -180, 0, 36),
         BackgroundColor3 = M.Main,
         Visible = false,
         Parent = F,
+        ZIndex = 5
     })
-    corner(PickerContainer, UDim.new(0, 8))
-    mkStroke(PickerContainer, M.Border, 1, 0.4)
+    corner(Picker, UDim.new(0, 6))
+    mkStroke(Picker, M.Border, 1, 0.4)
 
-    -- Поле цвета
-    local Field = make("ImageLabel", {
-        Size = UDim2.new(1, -44, 0, 100),
-        Position = UDim2.new(0, 8, 0, 8),
-        BackgroundColor3 = Color3.fromHSV(h,1,1),
-        Image = "rbxassetid://4155801252",
-        Parent = PickerContainer,
+    -- пример простого выбора цвета (можешь заменить на свой)
+    local Palette = make("TextButton", {
+        Size = UDim2.new(1, -10, 1, -10),
+        Position = UDim2.new(0, 5, 0, 5),
+        BackgroundColor3 = col,
+        Text = "pick",
+        Parent = Picker,
+        ZIndex = 6
     })
-    corner(Field, UDim.new(0, 4))
+    corner(Palette, UDim.new(0, 4))
 
-    local FBtn = make("TextButton", {
-        Size = UDim2.new(1,1,1,0),
-        BackgroundTransparency = 1,
-        Text = "",
-        Parent = Field,
-    })
-
-    local SVDot = make("Frame", {
-        Size = UDim2.new(0,10,0,10),
-        Position = UDim2.new(s,-5,1-v,-5),
-        BackgroundTransparency = 1,
-        Parent = Field,
-    })
-    make("UIStroke", {Color = Color3.new(1,1,1), Thickness = 2, Parent = SVDot})
-
-    local HBar = make("Frame", {
-        Size = UDim2.new(0,20,0,100),
-        Position = UDim2.new(1,-28,0,8),
-        Parent = PickerContainer,
-    })
-
-    make("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,0)),
-        }),
-        Rotation = 90,
-        Parent = HBar,
-    })
-
-    local HBtn = make("TextButton", {
-        Size = UDim2.new(1,0,1,0),
-        BackgroundTransparency = 1,
-        Parent = HBar,
-    })
-
-    -- Обновление цвета
-    local function refresh()
-        col = Color3.fromHSV(h,s,v)
-        ColorPreview.BackgroundColor3 = col
-        Field.BackgroundColor3 = Color3.fromHSV(h,1,1)
-        SVDot.Position = UDim2.new(s,-5,1-v,-5)
-        callback(enabled, col)
-    end
-
-    local draggingSV = false
-    local draggingH = false
-
-    FBtn.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSV = true
-        end
+    Palette.MouseButton1Click:Connect(function()
+        col = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255))
+        Preview.BackgroundColor3 = col
+        callback(col, Enabled)
     end)
 
-    HBtn.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingH = true
-        end
-    end)
-
-    UIS.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSV = false
-            draggingH = false
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseMovement then
-            if draggingSV then
-                s = math.clamp((i.Position.X - Field.AbsolutePosition.X)/Field.AbsoluteSize.X,0,1)
-                v = 1 - math.clamp((i.Position.Y - Field.AbsolutePosition.Y)/Field.AbsoluteSize.Y,0,1)
-                refresh()
-            elseif draggingH then
-                h = math.clamp((i.Position.Y - HBar.AbsolutePosition.Y)/HBar.AbsoluteSize.Y,0,1)
-                refresh()
-            end
-        end
-    end)
-
-    -- Toggle
-    ToggleBtn.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
-        tw(ToggleCircle, {
-            Position = enabled and UDim2.new(1,-18,0.5,-8) or UDim2.new(0,2,0.5,-8)
-        })
-        callback(enabled, col)
-    end)
-
-    -- Открытие пикера
-    ColorPreview.MouseButton1Click:Connect(function()
-        pickerOpen = not pickerOpen
-        PickerContainer.Visible = pickerOpen
+    -- открыть/закрыть пикер
+    Preview.MouseButton1Click:Connect(function()
+        Picker.Visible = not Picker.Visible
     end)
 
     return {
-        SetEnabled = function(_, v)
-            enabled = v
-            callback(enabled, col)
+        SetColor = function(_, newCol)
+            col = newCol
+            Preview.BackgroundColor3 = col
+            callback(col, Enabled)
         end,
-        SetColor = function(_, c)
-            col = c
-            h,s,v = c:ToHSV()
-            refresh()
+        SetToggle = function(_, val)
+            Enabled = val
+            Toggle.BackgroundColor3 = Enabled and M.Accent or M.Second
+            callback(col, Enabled)
         end
     }
 end
