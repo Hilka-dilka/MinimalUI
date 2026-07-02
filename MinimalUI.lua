@@ -1968,134 +1968,448 @@ function Section:CreateToggleSlider(text, min, max, default, toggleDefault, call
 end
 
 
-                      -- ── TOGGLE COLOR PICKER (INLINE, FIXED) ─────────────────────
-function Section:CreateTogglePicker(text, defaultColor, toggleDefault, callback)
-    callback = callback or function() end
+                                  -- ── TOGGLE PICKER (toggle + color picker) ─────────────────────
+            function Section:CreateTogglePicker(text, defaultColor, toggleDefault, callback)
+                callback = callback or function() end
+                local col = defaultColor or Color3.fromRGB(124, 58, 237)
+                local enabled = toggleDefault or false
+                local pickerOpen = false
+                local h, s, v = col:ToHSV()
+                addSep()
 
-    local TweenService = game:GetService("TweenService")
+                local F = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 36),
+                    BackgroundTransparency = 1,
+                    ClipsDescendants = false,
+                    Parent = Items,
+                })
 
-    -- главный контейнер
-    local F = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1,
-        Parent = Section.Container
-    })
+                -- Текст
+                local Lbl = make("TextLabel", {
+                    Size = UDim2.new(1, -100, 0, 36),
+                    BackgroundTransparency = 1,
+                    Text = text,
+                    TextColor3 = M.Text,
+                    TextSize = 13, Font = M.SubF,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = F,
+                })
+                table.insert(mText, Lbl)
 
-    make("UIListLayout", {
-        Padding = UDim.new(0, 4),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = F
-    })
+                -- Контейнер для превью цвета и тоггла (справа)
+                local RightContainer = make("Frame", {
+                    Size = UDim2.new(0, 80, 1, 0),
+                    Position = UDim2.new(1, -80, 0, 0),
+                    BackgroundTransparency = 1,
+                    Parent = F,
+                })
 
-    -- состояние
-    local col = defaultColor or Color3.fromRGB(255,255,255)
-    local Enabled = toggleDefault or false
-    local Open = false
+                -- Превью цвета (квадрат слева от тоггла)
+                local ColorPreview = make("TextButton", {
+                    Size = UDim2.new(0, 28, 0, 20),
+                    Position = UDim2.new(0, 0, 0.5, -10),
+                    BackgroundColor3 = col,
+                    Text = "",
+                    AutoButtonColor = false,
+                    Parent = RightContainer,
+                })
+                corner(ColorPreview, UDim.new(0, 5))
+                mkStroke(ColorPreview, M.Border, 1, 0.4)
 
-    -- ── TOP BAR ─────────────────────
-    local Top = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundTransparency = 1,
-        Parent = F
-    })
+                -- Тоггл (справа от превью)
+                local ToggleFrame = make("Frame", {
+                    Size = UDim2.new(0, 38, 0, 20),
+                    Position = UDim2.new(1, -38, 0.5, -10),
+                    BackgroundTransparency = 1,
+                    Parent = RightContainer,
+                })
+                
+                local ToggleBG = make("Frame", {
+                    Size = UDim2.new(0, 38, 0, 20),
+                    BackgroundColor3 = enabled and T.A or M.Border,
+                    Parent = ToggleFrame,
+                })
+                corner(ToggleBG, UDim.new(1, 0))
+                table.insert(toggleReg, {bg = ToggleBG, stateRef = {v = enabled}})
+                
+                local ToggleCircle = make("Frame", {
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
+                    BackgroundColor3 = Color3.new(1, 1, 1),
+                    Parent = ToggleBG,
+                })
+                corner(ToggleCircle, UDim.new(1, 0))
+                
+                local ToggleBtn = make("TextButton", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    Parent = ToggleFrame,
+                })
 
-    local L = make("TextLabel", {
-        Size = UDim2.new(1, -90, 1, 0),
-        BackgroundTransparency = 1,
-        Text = text,
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        TextColor3 = M.Text,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = Top
-    })
+                -- Контейнер для ColorPicker (выпадает вниз)
+                local PickerContainer = make("Frame", {
+                    Size = UDim2.new(1, 0, 0, 0),
+                    Position = UDim2.new(0, 0, 0, 38),
+                    BackgroundColor3 = M.Main,
+                    ClipsDescendants = true,
+                    Visible = false,
+                    Parent = F,
+                })
+                corner(PickerContainer, UDim.new(0, 8))
+                mkStroke(PickerContainer, M.Border, 1, 0.4)
+                table.insert(mMain, PickerContainer)
 
-    -- PREVIEW (цвет)
-    local Preview = make("TextButton", {
-        Size = UDim2.new(0, 28, 0, 20),
-        Position = UDim2.new(1, -60, 0, 8),
-        BackgroundColor3 = col,
-        Text = "",
-        AutoButtonColor = false,
-        Parent = Top
-    })
-    corner(Preview, UDim.new(0, 4))
-    mkStroke(Preview, M.Border, 1, 0.4)
+                -- Панель ColorPicker (вся та же логика что и в обычном пикере)
+                local Field = make("ImageLabel", {
+                    Size = UDim2.new(1, -44, 0, 100),
+                    Position = UDim2.new(0, 8, 0, 8),
+                    BackgroundColor3 = Color3.fromHSV(h, 1, 1),
+                    Image = "rbxassetid://4155801252",
+                    Parent = PickerContainer,
+                })
+                corner(Field, UDim.new(0, 4))
+                local FBtn = make("TextButton", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    Parent = Field,
+                })
+                local SVDot = make("Frame", {
+                    Size = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(s, -5, 1 - v, -5),
+                    BackgroundTransparency = 1,
+                    Parent = Field,
+                })
+                corner(SVDot, UDim.new(1, 0))
+                make("UIStroke", {Color = Color3.new(1,1,1), Thickness = 2, Parent = SVDot})
 
-    -- TOGGLE (справа)
-    local Toggle = make("TextButton", {
-        Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new(1, -28, 0, 6),
-        BackgroundColor3 = Enabled and M.Accent or M.Second,
-        Text = "",
-        AutoButtonColor = false,
-        Parent = Top
-    })
-    corner(Toggle, UDim.new(1, 0))
-    mkStroke(Toggle, M.Border, 1, 0.4)
+                local HBar = make("Frame", {
+                    Size = UDim2.new(0, 20, 0, 100),
+                    Position = UDim2.new(1, -28, 0, 8),
+                    Parent = PickerContainer,
+                })
+                corner(HBar, UDim.new(0, 4))
+                make("UIGradient", {
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0,    Color3.fromRGB(255, 0,   0)),
+                        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+                        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0,   255, 0)),
+                        ColorSequenceKeypoint.new(0.5,  Color3.fromRGB(0,   255, 255)),
+                        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0,   0,   255)),
+                        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0,   255)),
+                        ColorSequenceKeypoint.new(1,    Color3.fromRGB(255, 0,   0)),
+                    }),
+                    Rotation = 90,
+                    Parent = HBar,
+                })
+                local HBtn = make("TextButton", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    Parent = HBar,
+                })
+                local HCur = make("Frame", {
+                    Size = UDim2.new(1, 4, 0, 4),
+                    Position = UDim2.new(0, -2, h, -2),
+                    BackgroundColor3 = Color3.new(1, 1, 1),
+                    Parent = HBar,
+                })
+                corner(HCur, UDim.new(1, 0))
 
-    Toggle.MouseButton1Click:Connect(function()
-        Enabled = not Enabled
-        Toggle.BackgroundColor3 = Enabled and M.Accent or M.Second
-        callback(col, Enabled)
-    end)
+                local RGBRow = make("Frame", {
+                    Size = UDim2.new(1, -16, 0, 22),
+                    Position = UDim2.new(0, 8, 0, 114),
+                    BackgroundTransparency = 1,
+                    Parent = PickerContainer,
+                })
 
-    -- ── PICKER (INLINE, НЕ overlay) ─────────────────────
-    local Picker = make("Frame", {
-        Size = UDim2.new(1, 0, 0, 0), -- закрыт
-        BackgroundColor3 = M.Main,
-        ClipsDescendants = true,
-        Parent = F
-    })
-    corner(Picker, UDim.new(0, 6))
-    mkStroke(Picker, M.Border, 1, 0.4)
+                local function mkInp(lbl2, px, vv)
+                    local cc = make("Frame", {
+                        Size = UDim2.new(0.27, 0, 1, 0),
+                        Position = UDim2.new(px, 0, 0, 0),
+                        BackgroundTransparency = 1,
+                        Parent = RGBRow,
+                    })
+                    make("TextLabel", {
+                        Size = UDim2.new(0, 12, 1, 0),
+                        BackgroundTransparency = 1,
+                        Text = lbl2,
+                        TextColor3 = M.Sub,
+                        TextSize = 10, Font = M.Font,
+                        Parent = cc,
+                    })
+                    local bg2 = make("Frame", {
+                        Size = UDim2.new(1, -14, 1, 0),
+                        Position = UDim2.new(0, 14, 0, 0),
+                        BackgroundColor3 = M.Sec,
+                        Parent = cc,
+                    })
+                    corner(bg2, UDim.new(0, 4))
+                    table.insert(mSec, bg2)
+                    local tb = make("TextBox", {
+                        Size = UDim2.new(1, -4, 1, 0),
+                        Position = UDim2.new(0, 2, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = tostring(vv),
+                        TextColor3 = M.Text,
+                        TextSize = 10, Font = M.SubF,
+                        Parent = bg2,
+                    })
+                    table.insert(mText, tb)
+                    return tb
+                end
 
-    -- простой цветовой блок (можешь заменить на HSV потом)
-    local ColorArea = make("TextButton", {
-        Size = UDim2.new(1, -10, 0, 120),
-        Position = UDim2.new(0, 5, 0, 5),
-        BackgroundColor3 = col,
-        Text = "",
-        Parent = Picker
-    })
-    corner(ColorArea, UDim.new(0, 4))
+                local RI = mkInp("R", 0,    math.floor(col.R * 255))
+                local GI = mkInp("G", 0.27, math.floor(col.G * 255))
+                local BI = mkInp("B", 0.54, math.floor(col.B * 255))
 
-    ColorArea.MouseButton1Click:Connect(function()
-        col = Color3.fromRGB(
-            math.random(0,255),
-            math.random(0,255),
-            math.random(0,255)
-        )
-        Preview.BackgroundColor3 = col
-        callback(col, Enabled)
-    end)
+                -- Rainbow toggle
+                local RBHolder = make("Frame", {
+                    Size = UDim2.new(0, 38, 1, 0),
+                    Position = UDim2.new(1, -38, 0, 0),
+                    BackgroundTransparency = 1,
+                    Parent = RGBRow,
+                })
+                make("TextLabel", {
+                    Size = UDim2.new(1, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    Text = "RGB",
+                    TextColor3 = M.Sub,
+                    TextSize = 8, Font = M.Font,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    Parent = RBHolder,
+                })
+                local RBTrack = make("Frame", {
+                    Size = UDim2.new(0, 28, 0, 14),
+                    Position = UDim2.new(0.5, -14, 1, -14),
+                    BackgroundColor3 = M.Border,
+                    Parent = RBHolder,
+                })
+                corner(RBTrack, UDim.new(1, 0))
+                table.insert(mBorder, RBTrack)
 
-    -- ── OPEN / CLOSE ─────────────────────
-    Preview.MouseButton1Click:Connect(function()
-        Open = not Open
+                local RBCircle = make("Frame", {
+                    Size = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 2, 0.5, -5),
+                    BackgroundColor3 = Color3.new(1, 1, 1),
+                    Parent = RBTrack,
+                })
+                corner(RBCircle, UDim.new(1, 0))
 
-        TweenService:Create(Picker, TweenInfo.new(0.25), {
-            Size = Open and UDim2.new(1, 0, 0, 140) or UDim2.new(1, 0, 0, 0)
-        }):Play()
-    end)
+                make("UIGradient", {
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0,    Color3.fromRGB(255, 0,   0)),
+                        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+                        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0,   255, 0)),
+                        ColorSequenceKeypoint.new(0.5,  Color3.fromRGB(0,   255, 255)),
+                        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0,   0,   255)),
+                        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0,   255)),
+                        ColorSequenceKeypoint.new(1,    Color3.fromRGB(255, 0,   0)),
+                    }),
+                    Enabled = false,
+                    Parent = RBTrack,
+                })
+                local RBBtn = make("TextButton", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    ZIndex = 2,
+                    Parent = RBTrack,
+                })
 
-    -- API
-    return {
-        SetColor = function(_, newCol)
-            col = newCol
-            Preview.BackgroundColor3 = col
-            ColorArea.BackgroundColor3 = col
-            callback(col, Enabled)
-        end,
+                local rainbow = false
+                local rbConn  = nil
+                local rbHue   = 0
 
-        SetToggle = function(_, val)
-            Enabled = val
-            Toggle.BackgroundColor3 = Enabled and M.Accent or M.Second
-            callback(col, Enabled)
-        end
-    }
+                local function setRainbow(state)
+                    rainbow = state
+                    local rbGrad = RBTrack:FindFirstChildOfClass("UIGradient")
+                    if state then
+                        if rbGrad then rbGrad.Enabled = true end
+                        tw(RBCircle, {Position = UDim2.new(1, -12, 0.5, -5)}, 0.2)
+                        rbConn = RS.RenderStepped:Connect(function(dt)
+                            rbHue = (rbHue + dt * 0.35) % 1
+                            local rc = Color3.fromHSV(rbHue, 1, 1)
+                            col = rc; h = rbHue; s = 1; v = 1
+                            Field.BackgroundColor3   = Color3.fromHSV(rbHue, 1, 1)
+                            SVDot.Position           = UDim2.new(1, -5, 0, -5)
+                            HCur.Position            = UDim2.new(0, -2, rbHue, -2)
+                            ColorPreview.BackgroundColor3 = rc
+                            RI.Text = tostring(math.floor(rc.R * 255))
+                            GI.Text = tostring(math.floor(rc.G * 255))
+                            BI.Text = tostring(math.floor(rc.B * 255))
+                            callback(enabled, rc)
+                        end)
+                    else
+                        if rbConn then rbConn:Disconnect(); rbConn = nil end
+                        if rbGrad then rbGrad.Enabled = false end
+                        tw(RBCircle, {Position = UDim2.new(0, 2, 0.5, -5)}, 0.2)
+                        tw(RBTrack,  {BackgroundColor3 = M.Border}, 0.2)
+                    end
+                end
+
+                RBBtn.MouseButton1Click:Connect(function()
+                    setRainbow(not rainbow)
+                end)
+
+                local function refresh()
+                    if rainbow then return end
+                    col = Color3.fromHSV(h, s, v)
+                    ColorPreview.BackgroundColor3 = col
+                    Field.BackgroundColor3   = Color3.fromHSV(h, 1, 1)
+                    SVDot.Position = UDim2.new(s, -5, 1 - v, -5)
+                    HCur.Position  = UDim2.new(0, -2, h, -2)
+                    RI.Text = tostring(math.floor(col.R * 255))
+                    GI.Text = tostring(math.floor(col.G * 255))
+                    BI.Text = tostring(math.floor(col.B * 255))
+                    callback(enabled, col)
+                end
+
+                local pSV, pH = false, false
+                FBtn.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then pSV = true end
+                end)
+                HBtn.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then pH = true end
+                end)
+                UIS.InputEnded:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                        pSV = false; pH = false
+                    end
+                end)
+                UIS.InputChanged:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseMovement then
+                        if pSV then
+                            s = math.clamp((i.Position.X - Field.AbsolutePosition.X) / Field.AbsoluteSize.X, 0, 1)
+                            v = 1 - math.clamp((i.Position.Y - Field.AbsolutePosition.Y) / Field.AbsoluteSize.Y, 0, 1)
+                            refresh()
+                        elseif pH then
+                            h = math.clamp((i.Position.Y - HBar.AbsolutePosition.Y) / HBar.AbsoluteSize.Y, 0, 1)
+                            refresh()
+                        end
+                    end
+                end)
+
+                for _, inp in ipairs({RI, GI, BI}) do
+                    inp.FocusLost:Connect(function()
+                        local r2 = math.clamp(tonumber(RI.Text) or 0, 0, 255)
+                        local g2 = math.clamp(tonumber(GI.Text) or 0, 0, 255)
+                        local b2 = math.clamp(tonumber(BI.Text) or 0, 0, 255)
+                        col = Color3.fromRGB(r2, g2, b2)
+                        h, s, v = col:ToHSV()
+                        refresh()
+                    end)
+                end
+
+                -- Открытие/закрытие пикера по клику на превью
+                ColorPreview.MouseButton1Click:Connect(function()
+                    pickerOpen = not pickerOpen
+                    if pickerOpen then
+                        PickerContainer.Visible = true
+                        PickerContainer.Size = UDim2.new(1, 0, 0, 0)
+                        tw(F, {Size = UDim2.new(1, 0, 0, 195)}, 0.25)
+                        tw(PickerContainer, {Size = UDim2.new(1, 0, 0, 150)}, 0.25)
+                    else
+                        tw(F, {Size = UDim2.new(1, 0, 0, 36)}, 0.25)
+                        tw(PickerContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+                        task.wait(0.2)
+                        PickerContainer.Visible = false
+                        PickerContainer.Size = UDim2.new(1, 0, 0, 150)
+                    end
+                end)
+
+                -- Обработчик тоггла (включает/выключает состояние)
+                ToggleBtn.MouseButton1Click:Connect(function()
+                    enabled = not enabled
+                    tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
+                    tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
+                    callback(enabled, col)
+                end)
+
+                -- Если пикер открыт, клик вне него закрывает
+                UIS.InputBegan:Connect(function(inp, gpe)
+                    if not pickerOpen or gpe then return end
+                    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local mousePos = inp.Position
+                        local previewRect = ColorPreview.AbsolutePosition
+                        local previewSize = ColorPreview.AbsoluteSize
+                        local pickerRect = PickerContainer.AbsolutePosition
+                        local pickerSize = PickerContainer.AbsoluteSize
+                        
+                        local clickedOnPreview = mousePos.X >= previewRect.X and mousePos.X <= previewRect.X + previewSize.X and
+                                                  mousePos.Y >= previewRect.Y and mousePos.Y <= previewRect.Y + previewSize.Y
+                        
+                        local clickedOnPicker = PickerContainer.Visible and 
+                                                mousePos.X >= pickerRect.X and mousePos.X <= pickerRect.X + pickerSize.X and
+                                                mousePos.Y >= pickerRect.Y and mousePos.Y <= pickerRect.Y + pickerSize.Y
+                        
+                        if not clickedOnPreview and not clickedOnPicker then
+                            pickerOpen = false
+                            tw(F, {Size = UDim2.new(1, 0, 0, 36)}, 0.25)
+                            tw(PickerContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+                            task.wait(0.2)
+                            PickerContainer.Visible = false
+                            PickerContainer.Size = UDim2.new(1, 0, 0, 150)
+                        end
+                    end
+                end)
+
+                -- API
+                local API = {}
+                
+                function API:SetEnabled(state)
+                    if state == enabled then return end
+                    enabled = state
+                    tw(ToggleBG, {BackgroundColor3 = enabled and T.A or M.Border})
+                    tw(ToggleCircle, {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
+                    callback(enabled, col)
+                end
+                
+                function API:SetColor(c)
+                    setRainbow(false)
+                    col = c
+                    h, s, v = c:ToHSV()
+                    refresh()
+                end
+                
+                function API:IsEnabled()
+                    return enabled
+                end
+                
+                function API:GetColor()
+                    return col
+                end
+                
+                function API:TogglePicker()
+                    ColorPreview.MouseButton1Click:Fire()
+                end
+
+                F.ZIndex = 1
+
+Lbl.ZIndex = 5
+RightContainer.ZIndex = 5
+
+ToggleFrame.ZIndex = 6
+ToggleBG.ZIndex = 6
+ToggleCircle.ZIndex = 7
+ToggleBtn.ZIndex = 8
+
+ColorPreview.ZIndex = 6
+
+PickerContainer.ZIndex = 2
+
+for _, v in ipairs(PickerContainer:GetDescendants()) do
+    if v:IsA("GuiObject") then
+        v.ZIndex = 2
+    end
 end
+
+
+
+                
+                return API
+            end
       
             -- ── TEXTBOX ──────────────────────────────────────
             function Section:CreateTextBox(text, placeholder, callback)
